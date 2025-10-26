@@ -1,0 +1,222 @@
+/* ---- LOGIN PAGE STYLES ---- */
+.login-container {
+    max-width: 350px;
+    background: #004d4d;
+    margin: 80px auto;
+    padding: 30px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 0 15px rgba(0,0,0,0.4);
+}
+
+.login-container h2 {
+    color: white;
+    margin-bottom: 20px;
+    font-size: 24px;
+    letter-spacing: 1px;
+}
+
+.login-container input {
+    width: 90%;
+    padding: 12px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 5px;
+    outline: none;
+    font-size: 16px;
+}
+
+.login-container input:focus {
+    box-shadow: 0 0 5px #00b3b3;
+}
+
+.login-container button {
+    width: 95%;
+    padding: 12px;
+    background: #00b3b3;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: 0.3s;
+}
+
+.login-container button:hover {
+    background: white;
+    color: #008B8B;
+}
+
+.login-container .forgot {
+    margin-top: 15px;
+}
+
+.login-container .forgot a {
+    color: #00b3b3;
+    text-decoration: none;
+}
+
+.login-container .forgot a:hover {
+    text-decoration: underline;
+}
+/* ---- FORGOT PASSWORD PAGE EXTRA STYLES ---- */
+.login-container .back-login {
+    margin-top: 15px;
+}
+
+.login-container .back-login a {
+    color: #00b3b3;
+    text-decoration: none;
+}
+
+.login-container .back-login a:hover {
+    text-decoration: underline;
+}
+/* ---- FOOTER STYLING ---- */
+.footer {
+    background: #004d4d;
+    color: white;
+    padding: 25px 15px;
+    font-size: 14px;
+    margin-top: 50px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.4);
+}
+
+.footer-container {
+    max-width: 1100px;
+    margin: auto;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    text-align: center;
+}
+
+.footer-left h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #00b3b3;
+}
+
+.footer-left p {
+    margin: 5px 0;
+}
+
+.footer-center p {
+    margin: 3px 0;
+}
+
+.footer a {
+    color: #00b3b3;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
+.footer-right h4 {
+    margin-bottom: 8px;
+    color: #00b3b3;
+}
+
+.social-icons {
+    margin-top: 5px;
+}
+
+.social-icons a {
+    display: inline-block;
+    margin: 0 4px;
+}
+
+.social-icons img {
+    width: 22px;
+    height: 22px;
+    filter: brightness(0) invert(1);
+    transition: 0.3s ease;
+}
+
+.social-icons img:hover {
+    filter: none;
+    transform: scale(1.1);
+}
+/* ---- CONTACT PAGE STYLES ---- */
+.contact-container {
+    max-width: 800px;
+    margin: 60px auto;
+    color: white;
+    text-align: center;
+    padding: 0 15px;
+}
+
+.contact-container h2 {
+    color: #00b3b3;
+    margin-bottom: 10px;
+    font-size: 28px;
+}
+
+.contact-container p {
+    font-size: 16px;
+    margin-bottom: 25px;
+}
+
+.contact-box {
+    background: #004d4d;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    margin-bottom: 30px;
+}
+
+.contact-box form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.contact-box input,
+.contact-box textarea {
+    width: 90%;
+    padding: 12px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 5px;
+    outline: none;
+    font-size: 16px;
+}
+
+.contact-box textarea {
+    height: 120px;
+    resize: none;
+}
+
+.contact-box button {
+    width: 94%;
+    padding: 12px;
+    background: #00b3b3;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.contact-box button:hover {
+    background: white;
+    color: #008B8B;
+}
+
+.contact-info {
+    text-align: left;
+    background: #003737;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.contact-info h3 {
+    color: #00b3b3;
+    margin-bottom: 10px;
+}
