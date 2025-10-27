@@ -4,6 +4,14 @@ ob_start();
 include '../includes/db.php';
 include 'partials/menu.php';
 
+// Add PHPMailer for email functionality
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require '../PHPMailer/src/Exception.php';
+require '../PHPMailer/src/PHPMailer.php';
+require '../PHPMailer/src/SMTP.php';
+
 $form_errors = [];
 $form_data = [];
 $success_msg = '';
@@ -16,6 +24,64 @@ if (!isset($_SESSION['flash_messages'])) {
 // Helper function to add flash messages
 function add_flash_message($type, $msg) {
     $_SESSION['flash_messages'][] = ['type' => $type, 'msg' => $msg];
+}
+
+// Function to send email notification to student
+function sendStudentCredentials($studentEmail, $studentFullName, $studentUsername, $studentPassword) {
+    $mail = new PHPMailer(true);
+
+    try {
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'tomasderese49@gmail.com'; // Your Gmail
+        $mail->Password   = 'njcv gmam lsda ejlf';     // App password
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
+        $mail->SMTPDebug  = 0;  // Set to 0 for production
+
+        // Recipients
+        $mail->setFrom('tomasderese49@gmail.com', 'DBU Clearance System');
+        $mail->addAddress($studentEmail, $studentFullName);
+        $mail->addReplyTo('tomasderese49@gmail.com', 'DBU Clearance System');
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = 'Your DBU Clearance System Login Credentials';
+        $mail->Body = "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                <h2 style='color: #2c3e50;'>Welcome to DBU Clearance System!</h2>
+                <p>Dear <strong>{$studentFullName}</strong>,</p>
+                <p>Your account has been created successfully in the DBU Clearance Management System.</p>
+                
+                <div style='background: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #2c3e50;'>
+                    <h3 style='margin-top: 0;'>Your Login Credentials:</h3>
+                    <p><strong>Username:</strong> {$studentUsername}</p>
+                    <p><strong>Password:</strong> {$studentPassword}</p>
+                </div>
+                
+                <p style='color: #e74c3c; font-weight: bold;'>
+                    ⚠️ For security reasons, please change your password immediately after first login.
+                </p>
+                
+                <p>You can access the system at: <a href='http://dbu.free.nf/clearance-management/login.php'>Clearance System Login</a></p>
+                
+                <hr style='border: none; border-top: 1px solid #ddd;'>
+                <p style='color: #7f8c8d; font-size: 12px;'>
+                    This is an automated message. Please do not reply to this email.<br>
+                    If you have any questions, contact the system administrator.
+                </p>
+            </div>
+        ";
+
+        $mail->AltBody = "Welcome {$studentFullName}! Your DBU Clearance System account has been created. Username: {$studentUsername}, Password: {$studentPassword}. Please log in and change your password immediately.";
+
+        return $mail->send();
+    } catch (Exception $e) {
+        error_log("Email sending failed: " . $mail->ErrorInfo);
+        return false;
+    }
 }
 
 // Function to verify if email exists using SMTP
@@ -371,7 +437,16 @@ if (isset($_POST['add_student'])) {
         $stmt->bind_param("ssssssssssss", $student_id, $name, $last_name, $phone, $email, $department, $username, $password, $year, $semester, $profile_picture, $status);
         
         if ($stmt->execute()) {
-            add_flash_message('success', 'Student added successfully.');
+            // Send email notification to student with credentials
+            $studentFullName = $name . ' ' . $last_name;
+            $emailSent = sendStudentCredentials($email, $studentFullName, $username, $password_raw);
+            
+            if ($emailSent) {
+                add_flash_message('success', 'Student added successfully and login credentials sent via email.');
+            } else {
+                add_flash_message('success', 'Student added successfully but failed to send email notification.');
+            }
+            
             header("Location: manage-students.php");
             exit();
         } else {

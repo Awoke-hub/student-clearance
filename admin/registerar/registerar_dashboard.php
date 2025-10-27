@@ -4,9 +4,115 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 session_start();
 include '../../includes/db.php';
+
+// Add PHPMailer for email functionality
+require '../../PHPMailer/src/Exception.php';
+require '../../PHPMailer/src/PHPMailer.php';
+require '../../PHPMailer/src/SMTP.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'registrar_admin') {
     header("Location: ../login.php");
     exit();
+}
+
+// Function to send email notification to student
+function sendClearanceDecisionEmail($studentEmail, $studentName, $decision, $reason = '') {
+    $mail = new PHPMailer(true);
+
+    try {
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'tomasderese49@gmail.com';
+        $mail->Password   = 'njcv gmam lsda ejlf';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
+        $mail->SMTPDebug  = 0;
+
+        // Recipients
+        $mail->setFrom('tomasderese49@gmail.com', 'DBU Clearance System');
+        $mail->addAddress($studentEmail, $studentName);
+
+        // Content
+        $mail->isHTML(true);
+        
+        if ($decision === 'approved') {
+            $mail->Subject = 'Final Clearance Approved - DBU Clearance System';
+            $mail->Body = "
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                    <h2 style='color: #2c3e50;'>🎉 Final Clearance Approved!</h2>
+                    <p>Dear <strong>{$studentName}</strong>,</p>
+                    <p>We are pleased to inform you that your final clearance has been <strong>APPROVED</strong> by the Registrar Office.</p>
+                    
+                    <div style='background: #d4edda; padding: 20px; border-radius: 8px; border: 2px solid #c3e6cb; margin: 20px 0;'>
+                        <h3 style='margin: 0; color: #155724;'>✅ Clearance Status: Approved</h3>
+                        <p style='margin: 10px 0 0 0; color: #155724;'>
+                            Your clearance process is now complete. You have successfully cleared all requirements.
+                        </p>
+                    </div>
+                    
+                    <p><strong>Important Notes:</strong></p>
+                    <ul>
+                        <li>You can download your clearance certificate from the student portal</li>
+                        <li>You have completed all clearance requirements</li>
+                        <li>This completes your clearance process at DBU</li>
+                    </ul>
+                    
+                    <p>If you have any questions, please contact the Registrar Office.</p>
+                    
+                    <hr style='border: none; border-top: 1px solid #ddd;'>
+                    <p style='color: #7f8c8d; font-size: 12px;'>
+                        This is an automated message. Please do not reply to this email.
+                    </p>
+                </div>
+            ";
+            
+            $mail->AltBody = "Final Clearance Approved: Dear {$studentName}, your final clearance has been APPROVED. Your student status has been updated to inactive. This completes your clearance process at DBU.";
+            
+        } else { // rejected
+            $mail->Subject = 'Final Clearance Rejected - DBU Clearance System';
+            $mail->Body = "
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                    <h2 style='color: #2c3e50;'>⚠️ Final Clearance Requires Attention</h2>
+                    <p>Dear <strong>{$studentName}</strong>,</p>
+                    <p>Your final clearance request has been <strong>REJECTED</strong> by the Registrar Office.</p>
+                    
+                    <div style='background: #f8d7da; padding: 20px; border-radius: 8px; border: 2px solid #f5c6cb; margin: 20px 0;'>
+                        <h3 style='margin: 0; color: #721c24;'>❌ Clearance Status: Rejected</h3>
+                        <p style='margin: 10px 0 0 0; color: #721c24;'>
+                            <strong>Reason:</strong> {$reason}
+                        </p>
+                    </div>
+                    
+                    <p><strong>Next Steps:</strong></p>
+                    <ul>
+                        <li>Please address the issue mentioned above</li>
+                        <li>Your student status remains <strong>active</strong></li>
+                        <li>You may reapply for clearance after resolving the issue</li>
+                        <li>Contact the relevant department for assistance</li>
+                    </ul>
+                    
+                    <p>If you need clarification, please visit the Registrar Office.</p>
+                    
+                    <hr style='border: none; border-top: 1px solid #ddd;'>
+                    <p style='color: #7f8c8d; font-size: 12px;'>
+                        This is an automated message. Please do not reply to this email.
+                    </p>
+                </div>
+            ";
+            
+            $mail->AltBody = "Final Clearance Rejected: Dear {$studentName}, your final clearance has been REJECTED. Reason: {$reason}. Please address the issue and reapply. Your student status remains active.";
+        }
+
+        return $mail->send();
+    } catch (Exception $e) {
+        error_log("Email sending failed: " . $mail->ErrorInfo);
+        return false;
+    }
 }
 
 // Get current academic year
@@ -34,7 +140,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_action'])) {
             
             $student_data = $student_query->fetch_assoc();
             
-            // 2. ONLY check department status (since department already checks library, cafeteria, and dormitory)
+            // 2. Get student email from student table
+            $email_query = $conn->query("SELECT email FROM student WHERE student_id = '$student_id'");
+            $student_email = '';
+            if ($email_query && $email_query->num_rows > 0) {
+                $email_data = $email_query->fetch_assoc();
+                $student_email = $email_data['email'];
+            }
+            
+            // 3. ONLY check department status (since department already checks library, cafeteria, and dormitory)
             $approval_check = $conn->query("
                 SELECT status FROM department_clearance 
                 WHERE student_id = '$student_id' 
@@ -53,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_action'])) {
             if ($department_status === 'approved') {
                 // Department has approved (which means all previous departments are also approved), proceed with final approval
                 
-                // 3. Check if final clearance record exists
+                // 4. Check if final clearance record exists
                 $final_check = $conn->query("SELECT id FROM final_clearance WHERE student_id = '$student_id'");
                 
                 if ($final_check && $final_check->num_rows > 0) {
@@ -100,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_action'])) {
                     }
                 }
                 
-                // 4. Update academic clearance status and clear reject reason
+                // 5. Update academic clearance status and clear reject reason
                 $update = $conn->query("
                     UPDATE academicstaff_clearance 
                     SET 
@@ -113,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_action'])) {
                     throw new Exception("Failed to update academic clearance");
                 }
                 
-                // 5. UPDATE STUDENT STATUS FROM ACTIVE TO INACTIVE IN STUDENT TABLE
+                // 6. UPDATE STUDENT STATUS FROM ACTIVE TO INACTIVE IN STUDENT TABLE
                 $update_student = $conn->query("
                     UPDATE student 
                     SET status = 'inactive' 
@@ -124,10 +238,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_action'])) {
                     error_log("Could not update student status for student ID: $student_id");
                 }
                 
+                // 7. Send approval email notification
+                $student_name = $student_data['name'] . ' ' . $student_data['last_name'];
+                $email_sent = false;
+                if (!empty($student_email)) {
+                    $email_sent = sendClearanceDecisionEmail($student_email, $student_name, 'approved');
+                }
+                
                 // Commit transaction
                 $conn->commit();
 
-                $_SESSION['success_message'] = "Final clearance approved for {$student_data['name']} {$student_data['last_name']} (ID: $student_id). Student status updated to inactive.";
+                $email_status = $email_sent ? " and email notification sent" : " but email notification failed";
+                $_SESSION['success_message'] = "Final clearance approved for {$student_data['name']} {$student_data['last_name']} (ID: $student_id). Student status updated to inactive{$email_status}.";
                 
             } else {
                 throw new Exception("Cannot approve: Student must be cleared by Department first.");
@@ -155,7 +277,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_action'])) {
             
             $student_data = $student_query->fetch_assoc();
             
-            // 2. Check if final clearance record exists
+            // 2. Get student email from student table
+            $email_query = $conn->query("SELECT email FROM student WHERE student_id = '$student_id'");
+            $student_email = '';
+            if ($email_query && $email_query->num_rows > 0) {
+                $email_data = $email_query->fetch_assoc();
+                $student_email = $email_data['email'];
+            }
+            
+            // 3. Check if final clearance record exists
             $final_check = $conn->query("SELECT id FROM final_clearance WHERE student_id = '$student_id'");
             
             if ($final_check && $final_check->num_rows > 0) {
@@ -204,7 +334,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_action'])) {
                 }
             }
             
-            // 3. Update academic clearance status AND store reject reason
+            // 4. Update academic clearance status AND store reject reason
             $update = $conn->query("
                 UPDATE academicstaff_clearance 
                 SET 
@@ -217,7 +347,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_action'])) {
                 throw new Exception("Failed to update academic clearance");
             }
             
-            // 4. UPDATE STUDENT STATUS TO ACTIVE IF REJECTING (in case it was previously set to inactive)
+            // 5. UPDATE STUDENT STATUS TO ACTIVE IF REJECTING (in case it was previously set to inactive)
             $update_student = $conn->query("
                 UPDATE student 
                 SET status = 'active' 
@@ -228,10 +358,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_action'])) {
                 error_log("Could not update student status for student ID: $student_id");
             }
             
+            // 6. Send rejection email notification
+            $student_name = $student_data['name'] . ' ' . $student_data['last_name'];
+            $email_sent = false;
+            if (!empty($student_email)) {
+                $email_sent = sendClearanceDecisionEmail($student_email, $student_name, 'rejected', $reject_reason);
+            }
+            
             // Commit transaction
             $conn->commit();
             
-            $_SESSION['success_message'] = "Final clearance rejected for {$student_data['name']} {$student_data['last_name']} (ID: $student_id)";
+            $email_status = $email_sent ? " and email notification sent" : " but email notification failed";
+            $_SESSION['success_message'] = "Final clearance rejected for {$student_data['name']} {$student_data['last_name']} (ID: $student_id){$email_status}";
             
         } catch (Exception $e) {
             $conn->rollback();
@@ -250,6 +388,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
             // Bulk Approve - Only approve students that have department approval
             $success_count = 0;
             $failed_count = 0;
+            $email_success_count = 0;
+            $email_failed_count = 0;
             $failed_reasons = [];
             
             foreach ($selected_students as $student_id) {
@@ -267,7 +407,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
                     
                     $student_data = $student_query->fetch_assoc();
                     
-                    // 2. ONLY check department status
+                    // 2. Get student email
+                    $email_query = $conn->query("SELECT email FROM student WHERE student_id = '$student_id'");
+                    $student_email = '';
+                    if ($email_query && $email_query->num_rows > 0) {
+                        $email_data = $email_query->fetch_assoc();
+                        $student_email = $email_data['email'];
+                    }
+                    
+                    // 3. ONLY check department status
                     $approval_check = $conn->query("
                         SELECT status FROM department_clearance 
                         WHERE student_id = '$student_id' 
@@ -286,7 +434,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
                     if ($department_status === 'approved') {
                         // Department has approved, proceed with final approval
                         
-                        // 3. Check if final clearance record exists
+                        // 4. Check if final clearance record exists
                         $final_check = $conn->query("SELECT id FROM final_clearance WHERE student_id = '$student_id'");
                         
                         if ($final_check && $final_check->num_rows > 0) {
@@ -333,7 +481,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
                             }
                         }
                         
-                        // 4. Update academic clearance status
+                        // 5. Update academic clearance status
                         $update = $conn->query("
                             UPDATE academicstaff_clearance 
                             SET 
@@ -346,7 +494,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
                             throw new Exception("Failed to update academic clearance");
                         }
                         
-                        // 5. Update student status to inactive
+                        // 6. Update student status to inactive
                         $update_student = $conn->query("
                             UPDATE student 
                             SET status = 'inactive' 
@@ -355,6 +503,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
                         
                         if (!$update_student) {
                             error_log("Could not update student status for student ID: $student_id");
+                        }
+                        
+                        // 7. Send approval email notification
+                        $student_name = $student_data['name'] . ' ' . $student_data['last_name'];
+                        if (!empty($student_email)) {
+                            if (sendClearanceDecisionEmail($student_email, $student_name, 'approved')) {
+                                $email_success_count++;
+                            } else {
+                                $email_failed_count++;
+                            }
                         }
                         
                         // Commit transaction for this student
@@ -373,7 +531,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
             }
             
             if ($success_count > 0) {
-                $_SESSION['success_message'] = $success_count . " student(s) approved successfully!";
+                $email_status = "";
+                if ($email_success_count > 0) {
+                    $email_status .= ", {$email_success_count} email(s) sent";
+                }
+                if ($email_failed_count > 0) {
+                    $email_status .= ", {$email_failed_count} email(s) failed";
+                }
+                
+                $_SESSION['success_message'] = $success_count . " student(s) approved successfully{$email_status}!";
                 if ($failed_count > 0) {
                     $_SESSION['success_message'] .= " " . $failed_count . " student(s) failed (missing department approval).";
                     if (count($failed_reasons) > 0) {
@@ -394,6 +560,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
             if (!empty(trim($bulk_reject_reason))) {
                 $success_count = 0;
                 $failed_count = 0;
+                $email_success_count = 0;
+                $email_failed_count = 0;
                 
                 foreach ($selected_students as $student_id) {
                     $student_id = $conn->real_escape_string($student_id);
@@ -410,7 +578,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
                         
                         $student_data = $student_query->fetch_assoc();
                         
-                        // 2. Check if final clearance record exists
+                        // 2. Get student email
+                        $email_query = $conn->query("SELECT email FROM student WHERE student_id = '$student_id'");
+                        $student_email = '';
+                        if ($email_query && $email_query->num_rows > 0) {
+                            $email_data = $email_query->fetch_assoc();
+                            $student_email = $email_data['email'];
+                        }
+                        
+                        // 3. Check if final clearance record exists
                         $final_check = $conn->query("SELECT id FROM final_clearance WHERE student_id = '$student_id'");
                         
                         if ($final_check && $final_check->num_rows > 0) {
@@ -459,7 +635,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
                             }
                         }
                         
-                        // 3. Update academic clearance status
+                        // 4. Update academic clearance status
                         $update = $conn->query("
                             UPDATE academicstaff_clearance 
                             SET 
@@ -472,7 +648,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
                             throw new Exception("Failed to update academic clearance");
                         }
                         
-                        // 4. Update student status to active
+                        // 5. Update student status to active
                         $update_student = $conn->query("
                             UPDATE student 
                             SET status = 'active' 
@@ -481,6 +657,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
                         
                         if (!$update_student) {
                             error_log("Could not update student status for student ID: $student_id");
+                        }
+                        
+                        // 6. Send rejection email notification
+                        $student_name = $student_data['name'] . ' ' . $student_data['last_name'];
+                        if (!empty($student_email)) {
+                            if (sendClearanceDecisionEmail($student_email, $student_name, 'rejected', $bulk_reject_reason)) {
+                                $email_success_count++;
+                            } else {
+                                $email_failed_count++;
+                            }
                         }
                         
                         // Commit transaction for this student
@@ -494,7 +680,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
                 }
                 
                 if ($success_count > 0) {
-                    $_SESSION['success_message'] = $success_count . " student(s) rejected successfully!";
+                    $email_status = "";
+                    if ($email_success_count > 0) {
+                        $email_status .= ", {$email_success_count} email(s) sent";
+                    }
+                    if ($email_failed_count > 0) {
+                        $email_status .= ", {$email_failed_count} email(s) failed";
+                    }
+                    
+                    $_SESSION['success_message'] = $success_count . " student(s) rejected successfully{$email_status}!";
                     if ($failed_count > 0) {
                         $_SESSION['success_message'] .= " " . $failed_count . " student(s) failed to process.";
                     }
@@ -1239,7 +1433,7 @@ $history_result = $conn->query($history_query);
         <div class="final-approve-notice">
             <i class="fas fa-info-circle"></i>
             <div>
-                <strong>Final Clearance Management:</strong> Only showing <?php echo $current_academic_year; ?> academic year students approved by Department. Department approval implies all previous departments (Library, Cafeteria, Dormitory) are also approved. When approving, student status will be changed from active to inactive in the student table.
+                <strong>Final Clearance Management:</strong> Only showing <?php echo $current_academic_year; ?> academic year students approved by Department. Department approval implies all previous departments (Library, Cafeteria, Dormitory) are also approved. When approving, student status will be changed from active to inactive in the student table. Students will receive email notifications for both approval and rejection decisions.
             </div>
         </div>
 
@@ -1748,7 +1942,7 @@ $history_result = $conn->query($history_query);
             }
             
             if (action === 'approve') {
-                if (confirm(`Are you sure you want to approve ${selectedCount} student(s)? Only students with Department approval will be processed.`)) {
+                if (confirm(`Are you sure you want to approve ${selectedCount} student(s)? Only students with Department approval will be processed. Students will receive email notifications.`)) {
                     document.getElementById('bulkActionInput').value = 'approve';
                     document.getElementById('bulkActionForm').submit();
                 }
@@ -1794,7 +1988,7 @@ $history_result = $conn->query($history_query);
                 return;
             }
             
-            if (confirm(`Are you sure you want to reject ${selectedCount} student(s) with this reason?`)) {
+            if (confirm(`Are you sure you want to reject ${selectedCount} student(s) with this reason? Students will receive email notifications.`)) {
                 document.getElementById('bulkActionInput').value = 'reject';
                 document.getElementById('bulkRejectReasonInput').value = rejectReason;
                 document.getElementById('bulkActionForm').submit();
