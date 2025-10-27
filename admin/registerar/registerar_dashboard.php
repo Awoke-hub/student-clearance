@@ -58,6 +58,7 @@ function sendClearanceDecisionEmail($studentEmail, $studentName, $decision, $rea
                     <p><strong>Important Notes:</strong></p>
                     <ul>
                         <li>You can download your clearance certificate from the student portal</li>
+                        <li> <a href='https://dbu.free.nf/clearance-management/index.php'>Click here to access your certificate</a></li>
                         <li>You have completed all clearance requirements</li>
                         <li>This completes your clearance process at DBU</li>
                     </ul>
