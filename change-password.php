@@ -1,46 +1,72 @@
 <?php
-include 'includes/menu.php'; 
 include 'includes/db.php';
+include 'includes/menu.php';
 
-if (!isset($_SESSION['reset_student_id'])) {
-    header("Location: forgot-password.php");
+// Redirect if not logged in
+if (!isset($_SESSION['student_id'])) {
+    header("Location: login.php");
     exit();
 }
 
-$message = "";
+$error = '';
+$success = '';
 
-if (isset($_POST['reset'])) {
+if (isset($_POST['change'])) {
+    $current_password = $_POST['current_password'];
     $new_password = $_POST['new_password'];
     $confirm_password = $_POST['confirm_password'];
+    $student_id = $_SESSION['student_id'];
 
     // Validate password match
     if ($new_password !== $confirm_password) {
-        $message = "<div class='message error'>❌ New password and confirm password do not match!</div>";
+        $error = "❌ New password and confirm password do not match!";
     } else {
-        // Strong password validation using the same function as change-password
+        // Strong password validation
         $password_errors = validatePassword($new_password);
         
         if (!empty($password_errors)) {
-            $errorMessages = "❌ Password requirements not met:<br>" . implode("<br>", $password_errors);
-            $message = "<div class='message error'>$errorMessages</div>";
+            $error = "❌ Password requirements not met:<br>" . implode("<br>", $password_errors);
         } else {
-            $hashed = password_hash($new_password, PASSWORD_DEFAULT);
-            $student_id = $_SESSION['reset_student_id'];
-
-            $stmt = $conn->prepare("UPDATE student SET password=? WHERE id=?");
-            $stmt->bind_param("si", $hashed, $student_id);
-
-            if ($stmt->execute()) {
-                $message = "<div class='message success'>✅ Password reset successfully! <a href='login.php'>Login now</a></div>";
-                unset($_SESSION['reset_student_id']);
+            // Get student data using student_id from session
+            $stmt = $conn->prepare("SELECT id, student_id, password FROM student WHERE student_id = ?");
+            $stmt->bind_param("s", $student_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows === 0) {
+                $error = "❌ Student record not found!";
             } else {
-                $message = "<div class='message error'>❌ Something went wrong. Try again.</div>";
+                $user = $result->fetch_assoc();
+                
+                // Verify current password
+                if (password_verify($current_password, $user['password'])) {
+                    // Check if new password is same as current password
+                    if (password_verify($new_password, $user['password'])) {
+                        $error = "❌ New password cannot be the same as current password!";
+                    } else {
+                        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                        
+                        // Update using the correct ID column (id instead of student_id)
+                        $update = $conn->prepare("UPDATE student SET password = ? WHERE id = ?");
+                        $update->bind_param("si", $hashed_password, $user['id']);
+                        
+                        if ($update->execute()) {
+                            $success = "✅ Password changed successfully!";
+                        } else {
+                            $error = "❌ Error updating password: " . $conn->error;
+                        }
+                        $update->close();
+                    }
+                } else {
+                    $error = "❌ Current password is incorrect!";
+                }
             }
+            $stmt->close();
         }
     }
 }
 
-// Strong password validation function (EXACT SAME AS change-password.php)
+// Strong password validation function
 function validatePassword($password) {
     $errors = [];
     
@@ -91,7 +117,7 @@ function validatePassword($password) {
 
 <style>
     .main-content {
-        margin-left: 300px; /* Moved closer to sidebar */
+        margin-left: 280px;
         margin-top: 80px;
         padding: 20px;
         min-height: calc(100vh - 80px);
@@ -102,21 +128,20 @@ function validatePassword($password) {
         align-items: flex-start;
     }
 
-    .reset-container {
+    .password-container {
         max-width: 500px;
-        margin: 20px 0; /* Removed auto margin to align with sidebar */
         background: white;
         padding: 30px;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        color: var(--content-text);
         width: 100%;
+        margin-top: 20px;
     }
 
-    .reset-container h2 {
+    .password-container h2 {
         text-align: center;
         color: var(--primary-color);
-        margin-bottom: 20px;
+        margin-bottom: 25px;
         font-size: 24px;
         padding-bottom: 10px;
         border-bottom: 2px solid #bdc3c7;
@@ -127,7 +152,7 @@ function validatePassword($password) {
         margin: 10px 0 15px 0;
     }
 
-    .reset-container input {
+    .password-container input {
         width: 100%;
         padding: 12px 40px 12px 15px;
         border: 1px solid #ddd;
@@ -137,7 +162,7 @@ function validatePassword($password) {
         box-sizing: border-box;
     }
 
-    .reset-container input:focus {
+    .password-container input:focus {
         border-color: var(--primary-color);
         outline: none;
         box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.2);
@@ -162,7 +187,7 @@ function validatePassword($password) {
         color: var(--primary-color);
     }
 
-    .reset-container button[type="submit"] {
+    .password-container button[type="submit"] {
         width: 100%;
         padding: 14px;
         background-color: var(--primary-color);
@@ -176,12 +201,12 @@ function validatePassword($password) {
         margin-top: 20px;
     }
 
-    .reset-container button[type="submit"]:hover {
+    .password-container button[type="submit"]:hover {
         background-color: var(--hover-color);
         transform: translateY(-2px);
     }
 
-    .reset-container button[type="submit"]:disabled {
+    .password-container button[type="submit"]:disabled {
         background-color: #95a5a6;
         cursor: not-allowed;
         transform: none;
@@ -206,19 +231,64 @@ function validatePassword($password) {
         background-color: #f8d7da;
         color: #721c24;
         border-left-color: #dc3545;
-        text-align: left;
     }
 
-    .success a {
-        color: #155724;
-        font-weight: bold;
-        text-decoration: underline;
-        margin-left: 5px;
-    }
-
-    .success a:hover {
-        color: #0d3515;
+    .back-link {
+        display: block;
+        text-align: center;
+        margin-top: 20px;
         text-decoration: none;
+        color: var(--primary-color);
+        font-weight: bold;
+        transition: all 0.3s;
+        padding: 10px;
+        border-radius: 4px;
+    }
+
+    .back-link:hover {
+        color: var(--hover-color);
+        background-color: #f8f9fa;
+        text-decoration: none;
+    }
+
+    /* Password requirements styling */
+    .password-requirements {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 15px;
+        margin: 10px 0 20px 0;
+        font-size: 13px;
+    }
+
+    .password-requirements h4 {
+        margin: 0 0 10px 0;
+        color: #2c3e50;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .password-requirements ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .password-requirements li {
+        margin-bottom: 5px;
+        transition: color 0.3s ease;
+    }
+
+    .requirement-met {
+        color: #28a745;
+        font-weight: 500;
+    }
+
+    .requirement-not-met {
+        color: #6c757d;
+    }
+
+    .requirement-error {
+        color: #dc3545;
     }
 
     .password-strength {
@@ -248,23 +318,18 @@ function validatePassword($password) {
         font-weight: bold;
     }
 
-    #passwordMatch {
-        font-size: 12px;
-        margin: -10px 0 15px 0;
-    }
-
     /* Responsive adjustments */
     @media (max-width: 1100px) {
         .main-content {
-            margin-left: 270px;
-            width: calc(100vw - 270px);
+            margin-left: 250px;
+            width: calc(100vw - 250px);
         }
     }
 
     @media (max-width: 900px) {
         .main-content {
-            margin-left: 240px;
-            width: calc(100vw - 240px);
+            margin-left: 220px;
+            width: calc(100vw - 220px);
         }
     }
 
@@ -276,13 +341,13 @@ function validatePassword($password) {
             padding: 15px;
         }
         
-        .reset-container {
-            margin: 0 auto; /* Re-center on mobile */
+        .password-container {
+            margin: 0 auto;
             padding: 25px;
         }
         
-        .reset-container h2 {
-            font-size: 22px;
+        .password-container h2 {
+            font-size: 20px;
         }
     }
 
@@ -291,20 +356,20 @@ function validatePassword($password) {
             padding: 10px;
         }
         
-        .reset-container {
+        .password-container {
             padding: 20px;
-            margin: 10px auto; /* Re-center on mobile */
+            margin: 10px auto;
         }
         
-        .reset-container h2 {
-            font-size: 20px;
+        .password-container h2 {
+            font-size: 18px;
         }
         
-        .reset-container input {
+        .password-container input {
             padding: 10px 35px 10px 12px;
         }
         
-        .reset-container button[type="submit"] {
+        .password-container button[type="submit"] {
             padding: 12px;
         }
         
@@ -316,12 +381,26 @@ function validatePassword($password) {
 </style>
 
 <div class="main-content">
-    <div class="reset-container">
-        <h2>Reset Password</h2>
+    <div class="password-container">
+        <h2>Change Password</h2>
+
+        <?php if (!empty($success)): ?>
+            <div class="message success"><?php echo $success; ?></div>
+        <?php endif; ?>
         
-        <?php echo $message; ?>
+        <?php if (!empty($error)): ?>
+            <div class="message error"><?php echo $error; ?></div>
+        <?php endif; ?>
 
         <form method="POST" id="passwordForm">
+            <!-- Current Password -->
+            <div class="password-input-wrapper">
+                <input type="password" name="current_password" id="current_password" placeholder="Current Password" required>
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('current_password')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+            
             <!-- New Password -->
             <div class="password-input-wrapper">
                 <input type="password" name="new_password" id="new_password" placeholder="New Password" required 
@@ -345,10 +424,25 @@ function validatePassword($password) {
                 </button>
             </div>
             
-            <div id="passwordMatch"></div>
+            <div id="passwordMatch" style="font-size: 12px; margin: -10px 0 15px 0;"></div>
             
-            <button type="submit" name="reset" id="submitBtn">Reset Password</button>
+            <div class="password-requirements">
+                <h4>Password Requirements:</h4>
+                <ul>
+                    <li id="req-length" class="requirement-not-met"> At least 8 characters long</li>
+                    <li id="req-maxlength" class="requirement-not-met"> Maximum 16 characters</li>
+                    <li id="req-uppercase" class="requirement-not-met"> At least one uppercase letter (A-Z)</li>
+                    <li id="req-lowercase" class="requirement-not-met"> At least one lowercase letter (a-z)</li>
+                    <li id="req-number" class="requirement-not-met"> At least one number (0-9)</li>
+                    <li id="req-special" class="requirement-not-met"> At least one special character (!@#$%^&*()_-+=)</li>
+                    <li id="req-nospace" class="requirement-not-met"> No spaces allowed</li>
+                </ul>
+            </div>
+            
+            <button type="submit" name="change" id="submitBtn">Change Password</button>
         </form>
+
+        <a class="back-link" href="index.php">⬅ Back to Dashboard</a>
     </div>
 </div>
 
@@ -373,8 +467,6 @@ function checkPasswordStrength() {
     const strengthBar = document.getElementById('strengthBar');
     const strengthText = document.getElementById('strengthText');
     
-    let strength = 0;
-    
     // Check individual requirements
     const hasMinLength = password.length >= 8;
     const hasMaxLength = password.length <= 16;
@@ -383,6 +475,17 @@ function checkPasswordStrength() {
     const hasNumber = /[0-9]/.test(password);
     const hasSpecial = /[!@#$%^&*()\-_=+{};:,<.>]/.test(password);
     const hasNoSpace = !/\s/.test(password);
+    
+    // Update requirement colors
+    updateRequirement('req-length', hasMinLength);
+    updateRequirement('req-maxlength', hasMaxLength);
+    updateRequirement('req-uppercase', hasUppercase);
+    updateRequirement('req-lowercase', hasLowercase);
+    updateRequirement('req-number', hasNumber);
+    updateRequirement('req-special', hasSpecial);
+    updateRequirement('req-nospace', hasNoSpace);
+    
+    let strength = 0;
     
     // Calculate strength based on met requirements
     if (hasMinLength) strength += 1;
@@ -417,6 +520,15 @@ function checkPasswordStrength() {
     }
     
     checkPasswordMatch();
+}
+
+function updateRequirement(elementId, isMet) {
+    const element = document.getElementById(elementId);
+    if (isMet) {
+        element.className = 'requirement-met';
+    } else {
+        element.className = 'requirement-not-met';
+    }
 }
 
 function checkPasswordMatch() {
