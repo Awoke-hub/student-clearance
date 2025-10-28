@@ -13,6 +13,7 @@ if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'department_a
 }
 
 $admin_id = $_SESSION['admin_id'];
+$admin_department = $_SESSION['admin_department']; // Get the admin's department
 
 // Get current academic year
 $current_year = date('Y');
@@ -256,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// Get statistics from department_clearance table - ONLY FOR APPROVED BY DORMITORY AND CURRENT ACADEMIC YEAR
+// Get statistics from department_clearance table - ONLY FOR APPROVED BY DORMITORY AND CURRENT ACADEMIC YEAR AND SAME DEPARTMENT
 $stats_stmt = $conn->prepare("
     SELECT 
         COUNT(*) as total,
@@ -270,17 +271,17 @@ $stats_stmt = $conn->prepare("
         WHERE status = 'approved'
         GROUP BY student_id
     ) dorm ON dc.student_id = dorm.student_id
-    WHERE dc.academic_year = ?
+    WHERE dc.academic_year = ? AND dc.department = ?
 ");
-$stats_stmt->bind_param("s", $current_academic_year);
+$stats_stmt->bind_param("ss", $current_academic_year, $admin_department);
 $stats_stmt->execute();
 $stats = $stats_stmt->get_result()->fetch_assoc();
 
-// Get requests for the main table - ONLY STUDENTS APPROVED BY DORMITORY AND CURRENT ACADEMIC YEAR
+// Get requests for the main table - ONLY STUDENTS APPROVED BY DORMITORY AND CURRENT ACADEMIC YEAR AND SAME DEPARTMENT
 $search = $_GET['search'] ?? '';
 $status_filter = $_GET['status'] ?? 'all';
 
-// Query to get department requests with clearance status - ONLY FOR DORMITORY APPROVED STUDENTS AND CURRENT ACADEMIC YEAR
+// Query to get department requests with clearance status - ONLY FOR DORMITORY APPROVED STUDENTS AND CURRENT ACADEMIC YEAR AND SAME DEPARTMENT
 $main_query = "
     SELECT 
         dc.*, 
@@ -303,7 +304,7 @@ $main_query = "
         WHERE status = 'approved'
         GROUP BY student_id
     ) dorm ON dc.student_id = dorm.student_id
-    WHERE dc.academic_year = ?
+    WHERE dc.academic_year = ? AND dc.department = ?
 ";
 
 if (!empty($search)) {
@@ -324,8 +325,8 @@ $main_query .= " ORDER BY
 $main_stmt = $conn->prepare($main_query);
 
 // Dynamic parameter binding
-$param_types = 's'; // Start with academic_year parameter
-$param_values = [$current_academic_year];
+$param_types = 'ss'; // Start with academic_year and department parameters
+$param_values = [$current_academic_year, $admin_department];
 
 if (!empty($search)) {
     $search_term = "%$search%";
@@ -354,7 +355,7 @@ $all_requests = $main_stmt->get_result();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Department Admin Dashboard</title>
+    <title>Department Admin Dashboard - <?php echo htmlspecialchars($admin_department); ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -961,6 +962,20 @@ $all_requests = $main_stmt->get_result();
             margin-left: 1rem;
         }
 
+        /* Department Badge */
+        .department-badge {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-left: 0.5rem;
+        }
+
         /* Responsive Design */
         @media (max-width: 1200px) {
             .main-content {
@@ -1052,7 +1067,7 @@ $all_requests = $main_stmt->get_result();
                 align-items: stretch;
             }
 
-            .academic-year-badge {
+            .academic-year-badge, .department-badge {
                 font-size: 0.7rem;
                 padding: 0.3rem 0.6rem;
                 margin-left: 0.5rem;
@@ -1085,7 +1100,7 @@ $all_requests = $main_stmt->get_result();
                 padding: 1.2rem;
             }
 
-            .academic-year-badge {
+            .academic-year-badge, .department-badge {
                 font-size: 0.6rem;
                 padding: 0.2rem 0.4rem;
                 margin-left: 0.3rem;
@@ -1118,6 +1133,9 @@ $all_requests = $main_stmt->get_result();
         <h1 style="font-size: 1.4rem;"><i class="fas fa-university"></i> Department Admin Dashboard</h1>
         <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.9rem;">
             <span><i class="fas fa-user-circle"></i> Welcome <?php echo htmlspecialchars($_SESSION['admin_name'] . ' ' . $_SESSION['admin_last_name']); ?></span>
+            <span class="department-badge">
+                <i class="fas fa-building"></i> <?php echo htmlspecialchars($admin_department); ?>
+            </span>
             <a href="../logout.php" style="color: white; text-decoration: none; padding: 0.4rem 0.8rem; background: rgba(255,255,255,0.2); border-radius: 6px;">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </a>
@@ -1173,8 +1191,9 @@ $all_requests = $main_stmt->get_result();
         <div class="clearance-notice">
             <i class="fas fa-info-circle"></i>
             <div>
-                <strong>Clearance Rules:</strong> 
+                <strong>Clearance Rules for <?php echo htmlspecialchars($admin_department); ?> Department:</strong> 
                 • Only showing <?php echo $current_academic_year; ?> academic year requests
+                • Only showing students from <strong><?php echo htmlspecialchars($admin_department); ?></strong> department
                 • Only showing students already approved by Dormitory
                 • Dormitory approval implies Library and Cafeteria are also approved
                 • Look for the <span style="color: var(--success);">⭐ star indicator</span> on ready-to-approve requests
@@ -1202,7 +1221,8 @@ $all_requests = $main_stmt->get_result();
             <div class="section-header">
                 <h3 class="section-title">
                     <i class="fas fa-list-alt"></i>
-                    Department Clearance Requests (<?php echo $current_academic_year; ?> Academic Year)
+                    Department Clearance Requests - <?php echo htmlspecialchars($admin_department); ?> 
+                    (<?php echo $current_academic_year; ?> Academic Year)
                 </h3>
                 <form id="filter-form" method="GET" style="display: none;">
                     <!-- No hidden inputs needed - form fields are handled by the visible inputs -->
@@ -1389,7 +1409,7 @@ $all_requests = $main_stmt->get_result();
                 <div class="empty-state">
                     <i class="fas fa-inbox"></i>
                     <h3>No clearance requests found</h3>
-                    <p>There are currently no <?php echo $current_academic_year; ?> clearance requests from students who have been approved by Dormitory.</p>
+                    <p>There are currently no <?php echo $current_academic_year; ?> clearance requests from <?php echo htmlspecialchars($admin_department); ?> students who have been approved by Dormitory.</p>
                 </div>
             <?php endif; ?>
         </div>

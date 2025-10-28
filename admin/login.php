@@ -25,7 +25,14 @@ if (isset($_POST['login'])) {
             $_SESSION['admin_name'] = $admin['name'];           // ✅ Save first name
             $_SESSION['admin_last_name'] = $admin['last_name']; // ✅ Save last name
             $_SESSION['admin_role'] = strtolower($admin['role']); // store in lowercase
-
+            
+            // ✅ NEW: Store department_name for department admins
+            if (strtolower($admin['role']) == 'department_admin' && isset($admin['department_name'])) {
+                $_SESSION['admin_department'] = $admin['department_name'];
+            } else {
+                $_SESSION['admin_department'] = null; // For non-department admins
+            }
+            
             // ✅ Redirect based on role
             switch ($_SESSION['admin_role']) {
                 case 'library_admin':

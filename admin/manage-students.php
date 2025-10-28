@@ -16,6 +16,17 @@ $form_errors = [];
 $form_data = [];
 $success_msg = '';
 
+// Define departments array
+$departments = [
+    'Information Technology',
+    'Information System', 
+    'Software Engineering',
+    'Computer Science',
+    'Accounting',
+    'Management',
+    'Economics'
+];
+
 // Clear previous messages
 if (!isset($_SESSION['flash_messages'])) {
     $_SESSION['flash_messages'] = [];
@@ -324,7 +335,7 @@ if (isset($_POST['add_student'])) {
     $username = trim($_POST['username']);
     $email = trim($_POST['email']);
     $password_raw = $_POST['password'];
-    $department = "Information technology"; // Hardcoded department
+    $department = trim($_POST['department']); // Get department from dropdown
     $phone = trim($_POST['phone']);
     $year = trim($_POST['year']);
     $semester = trim($_POST['semester']);
@@ -374,6 +385,11 @@ if (isset($_POST['add_student'])) {
                 $form_errors[] = $emailValidation['message'];
             }
         }
+    }
+
+    // Department validation
+    if (empty($department) || !in_array($department, $departments)) {
+        $form_errors[] = "Please select a valid department.";
     }
 
     if (empty($phone) || !preg_match("/^\d{10}$/", $phone)) {
@@ -1117,7 +1133,18 @@ $showAddForm = !empty($form_errors) || $edit_student !== null;
                            onblur="validateRealEmail(this.value)">
                     <div id="email-status" class="email-status"></div>
                     
-                    <input type="text" name="department" placeholder="Department" value="Information technology" class="disabled-field" readonly required>
+                    <!-- Department Dropdown -->
+                    <select name="department" required>
+                        <option value="">Select Department</option>
+                        <?php
+                        $selectedDept = $form_data['department'] ?? '';
+                        foreach ($departments as $dept) {
+                            $sel = ($dept === $selectedDept) ? 'selected' : '';
+                            echo "<option value=\"$dept\" $sel>$dept</option>";
+                        }
+                        ?>
+                    </select>
+                    
                     <input type="text" name="phone" placeholder="Phone" value="<?= htmlspecialchars($form_data['phone'] ?? '') ?>" required>
                     
                     <!-- Year Dropdown (1st to 4th) -->

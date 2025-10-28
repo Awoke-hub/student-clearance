@@ -15,6 +15,17 @@ function add_flash_message($type, $msg) {
     $_SESSION['flash_messages'][] = ['type' => $type, 'msg' => $msg];
 }
 
+// Define departments array
+$departments = [
+    'Information Technology',
+    'Information System', 
+    'Software Engineering',
+    'Computer Science',
+    'Accounting',
+    'Management',
+    'Economics'
+];
+
 // =================== ADD ADMIN ===================
 if (isset($_POST['add_admin'])) {
     $name = trim($_POST['name']);
@@ -23,10 +34,11 @@ if (isset($_POST['add_admin'])) {
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
     $role = trim($_POST['role']);
+    $department_name = trim($_POST['department_name']);
     $password_raw = $_POST['password'];
 
     // Save form data for refill
-    $form_data = compact('name', 'last_name', 'username', 'email', 'phone', 'role');
+    $form_data = compact('name', 'last_name', 'username', 'email', 'phone', 'role', 'department_name');
 
     // VALIDATION
     if (empty($name) || !preg_match("/^[a-zA-Z]+$/", $name)) {
@@ -72,6 +84,19 @@ if (isset($_POST['add_admin'])) {
     if (empty($role) || !in_array($role, $valid_roles)) {
         $form_errors[] = "Please select a valid role.";
     }
+    
+    // Department validation - required only for department_admin role
+    if ($role === 'department_admin') {
+        if (empty($department_name)) {
+            $form_errors[] = "Department name is required for Department Admin role.";
+        } elseif (!in_array($department_name, $departments)) {
+            $form_errors[] = "Please select a valid department.";
+        }
+    } else {
+        // For non-department admins, set department_name to NULL
+        $department_name = null;
+    }
+    
     if (empty($password_raw) || strlen($password_raw) < 8) {
         $form_errors[] = "Password is required and must be at least 8 characters long.";
     }
@@ -79,8 +104,8 @@ if (isset($_POST['add_admin'])) {
     // If no errors, insert admin
     if (empty($form_errors)) {
         $password = password_hash($password_raw, PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("INSERT INTO admin (name, last_name, username, email, phone, role, password) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssssss", $name, $last_name, $username, $email, $phone, $role, $password);
+        $stmt = $conn->prepare("INSERT INTO admin (name, last_name, username, email, phone, role, department_name, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssssss", $name, $last_name, $username, $email, $phone, $role, $department_name, $password);
         $stmt->execute();
         $stmt->close();
 
@@ -99,10 +124,11 @@ if (isset($_POST['update_admin'])) {
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
     $role = trim($_POST['role']);
+    $department_name = trim($_POST['department_name']);
     $password_raw = $_POST['password'];
 
     // Save form data for refill if errors
-    $form_data = compact('name', 'last_name', 'username', 'email', 'phone', 'role');
+    $form_data = compact('name', 'last_name', 'username', 'email', 'phone', 'role', 'department_name');
 
     // VALIDATION for update (similar but allow current record username/email)
     if (empty($name) || !preg_match("/^[a-zA-Z]+$/", $name)) {
@@ -146,6 +172,19 @@ if (isset($_POST['update_admin'])) {
     if (empty($role) || !in_array($role, $valid_roles)) {
         $form_errors[] = "Please select a valid role.";
     }
+    
+    // Department validation - required only for department_admin role
+    if ($role === 'department_admin') {
+        if (empty($department_name)) {
+            $form_errors[] = "Department name is required for Department Admin role.";
+        } elseif (!in_array($department_name, $departments)) {
+            $form_errors[] = "Please select a valid department.";
+        }
+    } else {
+        // For non-department admins, set department_name to NULL
+        $department_name = null;
+    }
+    
     if (!empty($password_raw) && strlen($password_raw) < 8) {
         $form_errors[] = "Password must be at least 8 characters long if you want to update it.";
     }
@@ -153,11 +192,11 @@ if (isset($_POST['update_admin'])) {
     if (empty($form_errors)) {
         $password = !empty($password_raw) ? password_hash($password_raw, PASSWORD_DEFAULT) : null;
         if ($password) {
-            $stmt = $conn->prepare("UPDATE admin SET name=?, last_name=?, username=?, email=?, phone=?, role=?, password=? WHERE id=?");
-            $stmt->bind_param("sssssssi", $name, $last_name, $username, $email, $phone, $role, $password, $id);
+            $stmt = $conn->prepare("UPDATE admin SET name=?, last_name=?, username=?, email=?, phone=?, role=?, department_name=?, password=? WHERE id=?");
+            $stmt->bind_param("ssssssssi", $name, $last_name, $username, $email, $phone, $role, $department_name, $password, $id);
         } else {
-            $stmt = $conn->prepare("UPDATE admin SET name=?, last_name=?, username=?, email=?, phone=?, role=? WHERE id=?");
-            $stmt->bind_param("ssssssi", $name, $last_name, $username, $email, $phone, $role, $id);
+            $stmt = $conn->prepare("UPDATE admin SET name=?, last_name=?, username=?, email=?, phone=?, role=?, department_name=? WHERE id=?");
+            $stmt->bind_param("sssssssi", $name, $last_name, $username, $email, $phone, $role, $department_name, $id);
         }
         $stmt->execute();
         $stmt->close();
@@ -241,6 +280,7 @@ $showAddForm = !empty($form_errors) || isset($edit_admin);
         .ma-messages { max-width: 400px; margin: 10px auto; padding: 10px; border-radius: 5px; }
         .ma-error-msg { background: #fdd; color: #a33; border: 1px solid #a33; }
         .ma-success-msg { background: #dfd; color: #383; border: 1px solid #383; }
+        .department-field { display: none; }
     </style>
 </head>
 <body>
@@ -294,7 +334,8 @@ $showAddForm = !empty($form_errors) || isset($edit_admin);
                 <input type="email" name="email" placeholder="Email" value="<?= htmlspecialchars($form_data['email'] ?? $edit_admin['email'] ?? '') ?>" required>
                 <input type="text" name="phone" placeholder="Phone" value="<?= htmlspecialchars($form_data['phone'] ?? $edit_admin['phone'] ?? '') ?>" required>
 
-                <select name="role" required>
+                <select name="role" id="roleSelect" required onchange="toggleDepartmentField()">
+                    <option value="">Select Role</option>
                     <?php
                     $roles = ['system_admin', 'department_admin','registrar_admin', 'cafeteria_admin' ,'library_admin', 'dormitory_admin','personal_protector'];
                     $selectedRole = $form_data['role'] ?? $edit_admin['role'] ?? '';
@@ -304,6 +345,20 @@ $showAddForm = !empty($form_errors) || isset($edit_admin);
                     }
                     ?>
                 </select>
+
+                <!-- Department Field - Only shown for department_admin role -->
+                <div id="departmentField" class="department-field">
+                    <select name="department_name" id="departmentSelect">
+                        <option value="">Select Department</option>
+                        <?php
+                        $selectedDept = $form_data['department_name'] ?? $edit_admin['department_name'] ?? '';
+                        foreach ($departments as $dept) {
+                            $sel = ($dept === $selectedDept) ? 'selected' : '';
+                            echo "<option value=\"$dept\" $sel>$dept</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
 
                 <input type="password" name="password" placeholder="<?= isset($edit_admin) ? 'Leave blank to keep current password' : 'Password' ?>">
                 <button type="submit" name="<?= isset($edit_admin) ? 'update_admin' : 'add_admin' ?>">
@@ -320,6 +375,7 @@ $showAddForm = !empty($form_errors) || isset($edit_admin);
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Role</th>
+                <th>Department</th>
                 <th>Update</th>
                 <th>Delete</th>
             </tr>
@@ -332,6 +388,7 @@ $showAddForm = !empty($form_errors) || isset($edit_admin);
                     <td><?= htmlspecialchars($a['email']) ?></td>
                     <td><?= htmlspecialchars($a['phone']) ?></td>
                     <td><?= htmlspecialchars($a['role']) ?></td>
+                    <td><?= !empty($a['department_name']) ? htmlspecialchars($a['department_name']) : '-' ?></td>
                     <td class="ma-action-icons">
                         <a href="?edit_admin=<?= $a['id'] ?>"><img src="../images/update.png" title="Update"></a>
                     </td>
@@ -344,7 +401,7 @@ $showAddForm = !empty($form_errors) || isset($edit_admin);
                 <?php endwhile; ?>
             <?php else: ?>
                 <tr>
-                    <td colspan="8">No admins found<?= $search ? " with ID: $search" : '' ?></td>
+                    <td colspan="9">No admins found<?= $search ? " with ID: $search" : '' ?></td>
                 </tr>
             <?php endif; ?>
         </table>
@@ -355,7 +412,29 @@ $showAddForm = !empty($form_errors) || isset($edit_admin);
             document.getElementById('addForm').style.display = 'block';
             document.getElementById('adminTable').style.display = 'none';
             document.querySelector('.ma-top-actions').style.display = 'none';
+            // Reset department field visibility when showing form
+            toggleDepartmentField();
         }
+
+        function toggleDepartmentField() {
+            const roleSelect = document.getElementById('roleSelect');
+            const departmentField = document.getElementById('departmentField');
+            const departmentSelect = document.getElementById('departmentSelect');
+            
+            if (roleSelect.value === 'department_admin') {
+                departmentField.style.display = 'block';
+                departmentSelect.required = true;
+            } else {
+                departmentField.style.display = 'none';
+                departmentSelect.required = false;
+                departmentSelect.value = '';
+            }
+        }
+
+        // Initialize department field visibility on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleDepartmentField();
+        });
     </script>
 
     <?php include 'partials/footer.php'; ?>

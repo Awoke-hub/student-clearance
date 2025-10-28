@@ -1,14 +1,13 @@
 -- phpMyAdmin SQL Dump
--- version 4.9.0.1
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: sql102.infinityfree.com
--- Generation Time: Oct 25, 2025 at 07:33 PM
--- Server version: 11.4.7-MariaDB
--- PHP Version: 7.2.22
+-- Host: 127.0.0.1
+-- Generation Time: Oct 27, 2025 at 02:50 PM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-SET AUTOCOMMIT = 0;
 START TRANSACTION;
 SET time_zone = "+00:00";
 
@@ -19,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `if0_39618166_clearance`
+-- Database: `clearance`
 --
 
 -- --------------------------------------------------------
@@ -105,15 +104,6 @@ CREATE TABLE `contact_messages` (
   `is_read` tinyint(1) NOT NULL DEFAULT 0 COMMENT '0=unread, 1=read'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
---
--- Dumping data for table `contact_messages`
---
-
-INSERT INTO `contact_messages` (`id`, `name`, `email`, `message`, `submitted_at`, `is_read`) VALUES
-(8, 'Tomas Derese', 'tomasderese49@gmail.com', 'Fac', '2025-08-07 06:58:18', 1),
-(9, 'Awoke', 'tomasderese49@gmail.com', 'sent', '2025-10-25 21:57:38', 1),
-(10, 'Awoke', 'tomasderese49@gmail.com', 'sent', '2025-10-25 22:11:36', 1);
-
 -- --------------------------------------------------------
 
 --
@@ -151,30 +141,6 @@ CREATE TABLE `dormitory_clearance` (
   `reject_reason` text DEFAULT NULL,
   `academic_year` int(11) NOT NULL DEFAULT year(curdate())
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `email_notifications`
---
-
-CREATE TABLE `email_notifications` (
-  `id` int(11) NOT NULL,
-  `student_id` varchar(50) NOT NULL,
-  `status` enum('approved','rejected') NOT NULL,
-  `sent_status` enum('sent','failed') NOT NULL,
-  `sent_at` datetime NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
-
---
--- Dumping data for table `email_notifications`
---
-
-INSERT INTO `email_notifications` (`id`, `student_id`, `status`, `sent_status`, `sent_at`) VALUES
-(1, 'DBU003', 'rejected', 'sent', '2025-10-22 10:11:33'),
-(2, 'DBU003', 'approved', 'sent', '2025-10-22 10:11:43'),
-(3, 'DBU001', 'rejected', 'sent', '2025-10-22 10:11:58'),
-(4, 'DBU001', 'approved', 'sent', '2025-10-22 10:12:00');
 
 -- --------------------------------------------------------
 
@@ -221,29 +187,6 @@ CREATE TABLE `library_clearance` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `password_reset_tokens`
---
-
-CREATE TABLE `password_reset_tokens` (
-  `id` int(11) NOT NULL,
-  `student_id` int(11) NOT NULL,
-  `token` varchar(100) NOT NULL,
-  `expires_at` datetime NOT NULL,
-  `used` tinyint(4) DEFAULT 0,
-  `created_at` timestamp NULL DEFAULT current_timestamp()
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
-
---
--- Dumping data for table `password_reset_tokens`
---
-
-INSERT INTO `password_reset_tokens` (`id`, `student_id`, `token`, `expires_at`, `used`, `created_at`) VALUES
-(10, 56, '6c40df5e4099688672d7d03fc1f647c4a596ba9f0233ee47b157625856a34789f3f4182aeff3f111019e75167ff5a1283c14', '2025-10-23 16:04:55', 0, '2025-10-23 19:04:55'),
-(7, 69, 'ef5439e8eb0901589f32bdd977e19e707f9515f27ba4f69b577e595ff16f46d3e0202a555353fb8abf81808aa0b815e4b6d5', '2025-10-23 16:02:45', 0, '2025-10-23 19:02:45');
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `student`
 --
 
@@ -260,15 +203,17 @@ CREATE TABLE `student` (
   `year` varchar(20) DEFAULT '1st Year',
   `semester` varchar(10) NOT NULL DEFAULT '1',
   `profile_picture` varchar(255) DEFAULT NULL,
-  `status` enum('active','inactive') DEFAULT 'active'
+  `status` enum('active','inactive') DEFAULT 'active',
+  `reset_code` varchar(10) DEFAULT NULL,
+  `reset_code_expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Dumping data for table `student`
 --
 
-INSERT INTO `student` (`id`, `student_id`, `name`, `last_name`, `phone`, `email`, `department`, `username`, `password`, `year`, `semester`, `profile_picture`, `status`) VALUES
-(82, 'DBU001', 'Awoke', 'Derssie', '0939013639', 'tomasderese49@gmail.com', 'Information technology', 'awoke123', '$2y$10$tACf1USmLxE9vdx4ZI8R0.u/srbWzj0Bi1W7psTCBNEB/IhbBdJsO', '3', '2', 'uploads/profile_pictures/profile_DBU001_1761435090.jpg', 'active');
+INSERT INTO `student` (`id`, `student_id`, `name`, `last_name`, `phone`, `email`, `department`, `username`, `password`, `year`, `semester`, `profile_picture`, `status`, `reset_code`, `reset_code_expires`) VALUES
+(95, 'DBU001', 'Awoke', 'Derssie', '0939013639', 'tomasderese49@gmail.com', 'Information technology', 'aderssie', '$2y$10$ktspAiAA0rwcMmVNwsQ/..TngF57SsN.2R5wdcsf9r/OtPiTYPz5O', '3', '2', 'uploads/profile_pictures/profile_DBU001_1761572752.jpg', 'active', NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -317,14 +262,6 @@ ALTER TABLE `dormitory_clearance`
   ADD KEY `fk_dormitory_clearance_student` (`student_id`);
 
 --
--- Indexes for table `email_notifications`
---
-ALTER TABLE `email_notifications`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_student_id` (`student_id`),
-  ADD KEY `idx_sent_at` (`sent_at`);
-
---
 -- Indexes for table `final_clearance`
 --
 ALTER TABLE `final_clearance`
@@ -336,14 +273,6 @@ ALTER TABLE `final_clearance`
 ALTER TABLE `library_clearance`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_library_clearance_student` (`student_id`);
-
---
--- Indexes for table `password_reset_tokens`
---
-ALTER TABLE `password_reset_tokens`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `token` (`token`),
-  ADD KEY `student_id` (`student_id`);
 
 --
 -- Indexes for table `student`
@@ -362,7 +291,7 @@ ALTER TABLE `student`
 -- AUTO_INCREMENT for table `academicstaff_clearance`
 --
 ALTER TABLE `academicstaff_clearance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=75;
 
 --
 -- AUTO_INCREMENT for table `admin`
@@ -374,7 +303,7 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `cafeteria_clearance`
 --
 ALTER TABLE `cafeteria_clearance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- AUTO_INCREMENT for table `contact_messages`
@@ -386,37 +315,25 @@ ALTER TABLE `contact_messages`
 -- AUTO_INCREMENT for table `department_clearance`
 --
 ALTER TABLE `department_clearance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
 
 --
 -- AUTO_INCREMENT for table `dormitory_clearance`
 --
 ALTER TABLE `dormitory_clearance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
-
---
--- AUTO_INCREMENT for table `email_notifications`
---
-ALTER TABLE `email_notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
 
 --
 -- AUTO_INCREMENT for table `library_clearance`
 --
 ALTER TABLE `library_clearance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
-
---
--- AUTO_INCREMENT for table `password_reset_tokens`
---
-ALTER TABLE `password_reset_tokens`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=85;
 
 --
 -- AUTO_INCREMENT for table `student`
 --
 ALTER TABLE `student`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=83;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
 
 --
 -- Constraints for dumped tables
