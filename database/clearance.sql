@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 27, 2025 at 02:50 PM
+-- Generation Time: Oct 28, 2025 at 11:33 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -40,6 +40,15 @@ CREATE TABLE `academicstaff_clearance` (
   `academic_year` int(11) NOT NULL DEFAULT year(curdate())
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
+--
+-- Dumping data for table `academicstaff_clearance`
+--
+
+INSERT INTO `academicstaff_clearance` (`id`, `student_id`, `name`, `last_name`, `department`, `reason`, `status`, `requested_at`, `reject_reason`, `academic_year`) VALUES
+(77, 'DBU001', 'Awoke', 'Derssie', 'Information Technology', 'sssssss', 'pending', '2025-10-28 09:12:41', NULL, 2025),
+(78, 'DBU002', 'Kirubel', 'Gelaw', 'Information System', 'eeeeeeeeee', 'pending', '2025-10-28 09:19:51', NULL, 2025),
+(79, 'DBU003', 'Azanaw', 'Nega', 'Information Technology', 'eeeeeeeeee', 'pending', '2025-10-28 09:20:08', NULL, 2025);
+
 -- --------------------------------------------------------
 
 --
@@ -54,21 +63,24 @@ CREATE TABLE `admin` (
   `password` varchar(255) NOT NULL,
   `email` varchar(100) NOT NULL,
   `phone` char(10) NOT NULL,
-  `role` varchar(50) NOT NULL
+  `role` varchar(50) NOT NULL,
+  `department_name` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Dumping data for table `admin`
 --
 
-INSERT INTO `admin` (`id`, `name`, `last_name`, `username`, `password`, `email`, `phone`, `role`) VALUES
-(1, 'Aman', 'Baye', 'cafeteria', '$2y$10$YvFelcJKQLn.ZW5HRcZxWu3yZsojj9ar3Ixr3VUXLRiDrI/MGinAC', 'admin@university.edu', '0912345678', 'cafeteria_admin'),
-(2, 'Azanaw', 'Nega', 'system', '$2y$10$nIWSWPzLoXwBlT4.xePNuOD7wyikIM4lUDDB58nLtDF.m9w5Z6YZ.', 'aza@gmail.com', '0986767676', 'system_admin'),
-(3, 'Awoke', 'Derssie', 'registrar', '$2y$10$nr5jaHlx18dUgrbCjKe3z.B8XHvbDm5Cd3j6Kw32PpYorRJpn4UBG', 'tomasderese49@gmail.com', '0939013630', 'registrar_admin'),
-(10, 'Amanuel', 'Neby', 'dormitory', '$2y$10$RvcEI1/AvazqTMxGg4WmX.kxlxmPnw53mlO3qDIobGJu.xaDPqKzW', 'tomasdere@gmail.com', '0939013630', 'dormitory_admin'),
-(11, 'Aman', 'Adis', 'library', '$2y$10$2BI9RekmX2NdanbBcqWMouVzb7j3R4Nuns5bg5cEILNI8bT3kQ7h2', 'adsmin@university.edu', '0912345678', 'library_admin'),
-(13, 'Tadele', 'Derso', 'department', '$2y$10$hneo0kNcPOr7L1teMuq/Y.XN.NGi7lAjUxijThaxbz7yDA7itIHga', 'adsvmin@university.edu', '0915166228', 'department_admin'),
-(17, 'Abrham', 'Daniel', 'protector', '$2y$10$FUziIUpA.2BxmjaKzfuLI.8Abnr0b9W5qsIVRYiimC80Z8MPfEpOy', 'tilahunsitotaw418@gmail.com', '0939013639', 'personal_protector');
+INSERT INTO `admin` (`id`, `name`, `last_name`, `username`, `password`, `email`, `phone`, `role`, `department_name`) VALUES
+(1, 'Aman', 'Baye', 'cafeteria', '$2y$10$YvFelcJKQLn.ZW5HRcZxWu3yZsojj9ar3Ixr3VUXLRiDrI/MGinAC', 'admin@university.edu', '0912345678', 'cafeteria_admin', NULL),
+(2, 'Azanaw', 'Nega', 'system', '$2y$10$nIWSWPzLoXwBlT4.xePNuOD7wyikIM4lUDDB58nLtDF.m9w5Z6YZ.', 'aza@gmail.com', '0986767676', 'system_admin', NULL),
+(3, 'Awoke', 'Derssie', 'registrar', '$2y$10$nr5jaHlx18dUgrbCjKe3z.B8XHvbDm5Cd3j6Kw32PpYorRJpn4UBG', 'tomasderese49@gmail.com', '0939013630', 'registrar_admin', NULL),
+(10, 'Amanuel', 'Neby', 'dormitory', '$2y$10$RvcEI1/AvazqTMxGg4WmX.kxlxmPnw53mlO3qDIobGJu.xaDPqKzW', 'tomasdere@gmail.com', '0939013630', 'dormitory_admin', NULL),
+(11, 'Aman', 'Adis', 'library', '$2y$10$2BI9RekmX2NdanbBcqWMouVzb7j3R4Nuns5bg5cEILNI8bT3kQ7h2', 'adsmin@university.edu', '0912345678', 'library_admin', NULL),
+(13, 'Tadele', 'Derso', 'department', '$2y$10$hneo0kNcPOr7L1teMuq/Y.XN.NGi7lAjUxijThaxbz7yDA7itIHga', 'adsvmin@university.edu', '0915166228', 'department_admin', 'Information Technology'),
+(17, 'Abrham', 'Daniel', 'protector', '$2y$10$FUziIUpA.2BxmjaKzfuLI.8Abnr0b9W5qsIVRYiimC80Z8MPfEpOy', 'tilahunsitotaw418@gmail.com', '0939013639', 'personal_protector', NULL),
+(19, 'Abrham', 'Daniel', 'abrham', '$2y$10$dvPY9dDCXU1sNgOSp/gzcO6S.eaPqicQeUW3y.lYd1fze2/9GrhU2', 'kman5819@gmail.com', '0939013639', 'department_admin', 'Accounting'),
+(20, 'Awoke', 'Derssie', 'awoke123', '$2y$10$SG70nBAvnM/xpPk2IIf4Z.BjFtJCy0/fRgCJnd52bzIPsBwCsUNEW', 'tomasderee49@gmail.com', '0939013639', 'department_admin', 'Information System');
 
 -- --------------------------------------------------------
 
@@ -88,6 +100,15 @@ CREATE TABLE `cafeteria_clearance` (
   `requested_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `academic_year` int(11) NOT NULL DEFAULT year(curdate())
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+--
+-- Dumping data for table `cafeteria_clearance`
+--
+
+INSERT INTO `cafeteria_clearance` (`id`, `student_id`, `name`, `last_name`, `department`, `reason`, `status`, `reject_reason`, `requested_at`, `academic_year`) VALUES
+(63, 'DBU001', 'Awoke', 'Derssie', 'Information Technology', 'sssssss', 'approved', NULL, '2025-10-28 09:12:41', 2025),
+(64, 'DBU002', 'Kirubel', 'Gelaw', 'Information System', 'eeeeeeeeee', 'approved', NULL, '2025-10-28 09:19:51', 2025),
+(65, 'DBU003', 'Azanaw', 'Nega', 'Information Technology', 'eeeeeeeeee', 'approved', NULL, '2025-10-28 09:20:08', 2025);
 
 -- --------------------------------------------------------
 
@@ -123,6 +144,15 @@ CREATE TABLE `department_clearance` (
   `academic_year` int(11) NOT NULL DEFAULT year(curdate())
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
+--
+-- Dumping data for table `department_clearance`
+--
+
+INSERT INTO `department_clearance` (`id`, `student_id`, `name`, `last_name`, `department`, `reason`, `status`, `requested_at`, `reject_reason`, `academic_year`) VALUES
+(64, 'DBU001', 'Awoke', 'Derssie', 'Information Technology', 'sssssss', 'approved', '2025-10-28 09:12:41', NULL, 2025),
+(65, 'DBU002', 'Kirubel', 'Gelaw', 'Information System', 'eeeeeeeeee', 'approved', '2025-10-28 09:19:51', NULL, 2025),
+(66, 'DBU003', 'Azanaw', 'Nega', 'Information Technology', 'eeeeeeeeee', 'approved', '2025-10-28 09:20:08', NULL, 2025);
+
 -- --------------------------------------------------------
 
 --
@@ -141,6 +171,15 @@ CREATE TABLE `dormitory_clearance` (
   `reject_reason` text DEFAULT NULL,
   `academic_year` int(11) NOT NULL DEFAULT year(curdate())
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+--
+-- Dumping data for table `dormitory_clearance`
+--
+
+INSERT INTO `dormitory_clearance` (`id`, `student_id`, `name`, `last_name`, `department`, `reason`, `status`, `requested_at`, `reject_reason`, `academic_year`) VALUES
+(57, 'DBU001', 'Awoke', 'Derssie', 'Information Technology', 'sssssss', 'approved', '2025-10-28 09:12:41', NULL, 2025),
+(58, 'DBU002', 'Kirubel', 'Gelaw', 'Information System', 'eeeeeeeeee', 'approved', '2025-10-28 09:19:51', NULL, 2025),
+(59, 'DBU003', 'Azanaw', 'Nega', 'Information Technology', 'eeeeeeeeee', 'approved', '2025-10-28 09:20:08', NULL, 2025);
 
 -- --------------------------------------------------------
 
@@ -184,6 +223,15 @@ CREATE TABLE `library_clearance` (
   `academic_year` int(11) NOT NULL DEFAULT year(curdate())
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
+--
+-- Dumping data for table `library_clearance`
+--
+
+INSERT INTO `library_clearance` (`id`, `student_id`, `name`, `last_name`, `department`, `reason`, `status`, `reject_reason`, `requested_at`, `academic_year`) VALUES
+(87, 'DBU001', 'Awoke', 'Derssie', 'Information Technology', 'sssssss', 'approved', NULL, '2025-10-28 09:12:41', 2025),
+(88, 'DBU002', 'Kirubel', 'Gelaw', 'Information System', 'eeeeeeeeee', 'approved', NULL, '2025-10-28 09:19:51', 2025),
+(89, 'DBU003', 'Azanaw', 'Nega', 'Information Technology', 'eeeeeeeeee', 'approved', NULL, '2025-10-28 09:20:08', 2025);
+
 -- --------------------------------------------------------
 
 --
@@ -213,7 +261,9 @@ CREATE TABLE `student` (
 --
 
 INSERT INTO `student` (`id`, `student_id`, `name`, `last_name`, `phone`, `email`, `department`, `username`, `password`, `year`, `semester`, `profile_picture`, `status`, `reset_code`, `reset_code_expires`) VALUES
-(95, 'DBU001', 'Awoke', 'Derssie', '0939013639', 'tomasderese49@gmail.com', 'Information technology', 'aderssie', '$2y$10$ktspAiAA0rwcMmVNwsQ/..TngF57SsN.2R5wdcsf9r/OtPiTYPz5O', '3', '2', 'uploads/profile_pictures/profile_DBU001_1761572752.jpg', 'active', NULL, NULL);
+(97, 'DBU001', 'Awoke', 'Derssie', '0939013639', 'tomasderese49@gmail.com', 'Information Technology', 'awoke123', '$2y$10$ECliBq22OLcYQKYtpgz/J.w.iDnbT4gPM.5kcjz3RpHRh6k7K9/cy', '3', '2', NULL, 'active', NULL, NULL),
+(98, 'DBU002', 'Kirubel', 'Gelaw', '0939013639', 'kman5819@gmail.com', 'Information System', 'kiru123', '$2y$10$GTiiPQPiMRY0zCOLjynYf.UCV.7wbnQ3KRtCyqJ6X2Xhb3Fn7VvkW', '3', '2', NULL, 'active', NULL, NULL),
+(99, 'DBU003', 'Azanaw', 'Nega', '0939013639', 'tilahunsitotaw418@gmail.com', 'Information Technology', 'aze123', '$2y$10$BZrOsT0Ebwu299MlVnVrr.cRED5RICqn0HJyNSn3ohxBFs9A6RNdy', '3', '2', NULL, 'active', NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -291,19 +341,19 @@ ALTER TABLE `student`
 -- AUTO_INCREMENT for table `academicstaff_clearance`
 --
 ALTER TABLE `academicstaff_clearance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=75;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
 
 --
 -- AUTO_INCREMENT for table `admin`
 --
 ALTER TABLE `admin`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `cafeteria_clearance`
 --
 ALTER TABLE `cafeteria_clearance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
 
 --
 -- AUTO_INCREMENT for table `contact_messages`
@@ -315,25 +365,25 @@ ALTER TABLE `contact_messages`
 -- AUTO_INCREMENT for table `department_clearance`
 --
 ALTER TABLE `department_clearance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
 
 --
 -- AUTO_INCREMENT for table `dormitory_clearance`
 --
 ALTER TABLE `dormitory_clearance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT for table `library_clearance`
 --
 ALTER TABLE `library_clearance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=85;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=90;
 
 --
 -- AUTO_INCREMENT for table `student`
 --
 ALTER TABLE `student`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=100;
 
 --
 -- Constraints for dumped tables
