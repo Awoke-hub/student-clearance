@@ -26,70 +26,82 @@ $tables = [
 
 <style>
     .main-content {
-        margin-left: 280px;
+        margin-left: 250px;
         margin-top: 80px;
-        padding: 20px;
+        padding: 30px;
         min-height: calc(100vh - 80px);
         background: var(--content-bg);
         color: var(--content-text);
+        width: calc(100% - 250px);
     }
 
     .clearance-container {
-        max-width: 900px;
+        max-width: min(1200px, 98%);
         margin: 0 auto;
         background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 35px;
+        border-radius: 12px;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
     }
     
-    .clearance-title {
+    .clearance-header {
         text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 3px solid #3498db;
+    }
+
+    .clearance-title {
         color: var(--primary-color);
-        margin-bottom: 20px;
-        font-size: 24px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #bdc3c7;
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
     }
 
     .academic-year-badge {
         background: linear-gradient(135deg, #3498db, #2980b9);
         color: white;
-        padding: 0.4rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
+        padding: 0.6rem 1.2rem;
+        border-radius: 25px;
+        font-size: 1rem;
         font-weight: 600;
         display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
+        gap: 0.6rem;
         margin-left: 1rem;
+        box-shadow: 0 3px 8px rgba(52, 152, 219, 0.3);
     }
     
     .clearance-table {
         width: 100%;
         border-collapse: collapse;
         text-align: center;
-        font-size: 14px;
-        margin-top: 20px;
+        font-size: 16px;
+        margin-top: 25px;
     }
     
     .clearance-table th {
         background: var(--primary-color);
         color: white;
-        padding: 12px 8px;
-        font-weight: 500;
+        padding: 16px 12px;
+        font-weight: 600;
         border: 1px solid var(--secondary-color);
+        font-size: 1rem;
     }
     
     .clearance-table td {
-        padding: 10px 8px;
+        padding: 14px 12px;
         background: white;
         color: var(--content-text);
         border: 1px solid #e0e0e0;
+        font-size: 0.95rem;
     }
     
     .clearance-table tr:hover td {
         background-color: #f8f9fa;
+        transform: translateY(-1px);
+        transition: all 0.2s ease;
     }
     
     /* Enhanced Status Styling with Icons and Better Colors */
@@ -97,98 +109,134 @@ $tables = [
         background-color: #fff3cd;
         color: #856404;
         font-weight: bold;
-        border-radius: 4px;
-        padding: 4px 8px;
+        border-radius: 6px;
+        padding: 8px 12px;
         display: inline-block;
-        border-left: 3px solid #ffc107;
+        border-left: 4px solid #ffc107;
+        font-size: 0.9rem;
     }
     
     .status-pending::before {
         content: "🟡 ";
-        font-size: 12px;
+        font-size: 14px;
     }
     
     .status-approved {
         background-color: #d4edda;
         color: #155724;
         font-weight: bold;
-        border-radius: 4px;
-        padding: 4px 8px;
+        border-radius: 6px;
+        padding: 8px 12px;
         display: inline-block;
-        border-left: 3px solid #28a745;
+        border-left: 4px solid #28a745;
+        font-size: 0.9rem;
     }
     
     .status-approved::before {
         content: "🟢 ";
-        font-size: 12px;
+        font-size: 14px;
     }
     
     .status-rejected {
         background-color: #f8d7da;
         color: #721c24;
         font-weight: bold;
-        border-radius: 4px;
-        padding: 4px 8px;
+        border-radius: 6px;
+        padding: 8px 12px;
         display: inline-block;
-        border-left: 3px solid #dc3545;
+        border-left: 4px solid #dc3545;
+        font-size: 0.9rem;
     }
     
     .status-rejected::before {
         content: "🔴 ";
-        font-size: 12px;
+        font-size: 14px;
     }
 
     .request-date {
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         color: #6c757d;
         margin-top: 0.2rem;
+        font-weight: 500;
     }
     
     .table-container {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        margin-top: 20px;
-        border-radius: 6px;
-        border: 1px solid #e0e0e0;
+        margin-top: 25px;
+        border-radius: 8px;
+        border: 2px solid #e0e0e0;
+        padding: 5px;
     }
 
     .empty-state {
         text-align: center;
-        padding: 2.5rem 1.5rem;
+        padding: 3rem 2rem;
         color: #6c757d;
         background: #f8f9fa;
-        border-radius: 8px;
+        border-radius: 10px;
         margin-top: 1rem;
+        border: 2px dashed #dee2e6;
     }
 
     .empty-state i {
-        font-size: 3rem;
-        margin-bottom: 1rem;
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
         opacity: 0.5;
     }
 
     .empty-state h3 {
-        margin-bottom: 0.5rem;
+        margin-bottom: 1rem;
         color: #495057;
+        font-size: 1.5rem;
     }
 
     .empty-state p {
         margin-bottom: 0;
-        font-size: 0.9rem;
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+
+    /* Reason column styling */
+    .reason-text {
+        max-width: 250px;
+        word-wrap: break-word;
+        line-height: 1.4;
+        text-align: left;
+        padding: 8px;
+    }
+
+    /* Reject reason styling */
+    .reject-reason {
+        max-width: 200px;
+        word-wrap: break-word;
+        line-height: 1.4;
+        text-align: left;
+        padding: 8px;
+        font-style: italic;
+        color: #dc3545;
+        background: #f8f9fa;
+        border-radius: 4px;
+        border-left: 3px solid #dc3545;
     }
     
     /* Responsive adjustments */
     @media (max-width: 1100px) {
         .main-content {
-            margin-left: 250px;
-            width: calc(100vw - 250px);
+            margin-left: 220px;
+            width: calc(100% - 220px);
         }
     }
 
     @media (max-width: 900px) {
         .main-content {
-            margin-left: 220px;
-            width: calc(100vw - 220px);
+            margin-left: 200px;
+            width: calc(100% - 200px);
+        }
+
+        .clearance-container {
+            max-width: 95%;
+            padding: 25px;
         }
     }
 
@@ -197,22 +245,81 @@ $tables = [
             margin-left: 0;
             width: 100%;
             margin-top: 70px;
-            padding: 15px;
+            padding: 20px;
         }
 
         .clearance-table th, 
         .clearance-table td {
-            padding: 8px 6px;
-            font-size: 13px;
+            padding: 12px 8px;
+            font-size: 14px;
         }
         
         .clearance-container {
             margin: 0 auto;
-            padding: 15px;
+            padding: 20px;
         }
         
         .clearance-title {
-            font-size: 20px;
+            font-size: 2rem;
+        }
+        
+        .status-pending::before,
+        .status-approved::before,
+        .status-rejected::before {
+            font-size: 12px;
+        }
+
+        .academic-year-badge {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            margin-left: 0.8rem;
+        }
+
+        .clearance-header {
+            margin-bottom: 25px;
+        }
+
+        .empty-state {
+            padding: 2rem 1.5rem;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.3rem;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .main-content {
+            padding: 15px;
+        }
+        
+        .clearance-table th, 
+        .clearance-table td {
+            padding: 10px 6px;
+            font-size: 13px;
+        }
+        
+        .clearance-title {
+            font-size: 1.8rem;
+        }
+        
+        .status-pending,
+        .status-approved,
+        .status-rejected {
+            padding: 6px 8px;
+            font-size: 12px;
+        }
+        
+        .clearance-container {
+            padding: 15px;
         }
         
         .status-pending::before,
@@ -222,64 +329,73 @@ $tables = [
         }
 
         .academic-year-badge {
-            font-size: 0.7rem;
-            padding: 0.3rem 0.6rem;
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
             margin-left: 0.5rem;
         }
-    }
-    
-    @media (max-width: 480px) {
-        .main-content {
-            padding: 10px;
+
+        .request-date {
+            font-size: 0.8rem;
         }
-        
+
+        .reason-text,
+        .reject-reason {
+            max-width: 150px;
+            font-size: 0.8rem;
+        }
+
+        .empty-state {
+            padding: 1.5rem 1rem;
+        }
+
+        .empty-state i {
+            font-size: 2.5rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.2rem;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+    }
+
+    @media (max-width: 360px) {
         .clearance-table th, 
         .clearance-table td {
-            padding: 6px 4px;
+            padding: 8px 4px;
             font-size: 12px;
         }
         
         .clearance-title {
-            font-size: 18px;
+            font-size: 1.6rem;
         }
         
-        .status-pending,
-        .status-approved,
-        .status-rejected {
-            padding: 2px 4px;
-            font-size: 11px;
-        }
-        
-        .clearance-container {
-            padding: 10px;
-        }
-        
-        .status-pending::before,
-        .status-approved::before,
-        .status-rejected::before {
-            font-size: 9px;
-        }
-
         .academic-year-badge {
-            font-size: 0.6rem;
-            padding: 0.2rem 0.4rem;
-            margin-left: 0.3rem;
+            display: block;
+            margin: 10px auto 0 auto;
+            width: fit-content;
         }
 
-        .request-date {
-            font-size: 0.7rem;
+        .reason-text,
+        .reject-reason {
+            max-width: 120px;
+            font-size: 0.75rem;
         }
     }
 </style>
 
 <div class="main-content">
     <div class="clearance-container">
-        <h2 class="clearance-title">
-            My Clearance Requests 
-            <span class="academic-year-badge">
-                <i class="fas fa-calendar-alt"></i> <?php echo $current_academic_year; ?>
-            </span>
-        </h2>
+        <div class="clearance-header">
+            <h3 class="clearance-title">
+                My Clearance Requests 
+                <span class="academic-year-badge">
+                    <i class="fas fa-calendar-alt"></i> <?php echo $current_academic_year; ?>
+                </span>
+            </h3>
+        </div>
         <div class="table-container">
             <table class="clearance-table">
                 <tr>
@@ -334,9 +450,9 @@ $tables = [
                         }
                 ?>
                 <tr>
-                    <td><?php echo htmlspecialchars($type); ?></td>
+                    <td><strong><?php echo htmlspecialchars($type); ?></strong></td>
                     <td><?php echo htmlspecialchars($row['department']); ?></td>
-                    <td><?php echo htmlspecialchars($row['reason']); ?></td>
+                    <td class="reason-text"><?php echo htmlspecialchars($row['reason']); ?></td>
                     <td>
                         <span class="<?php echo $statusClass; ?>">
                             <?php echo ucfirst($row['status']); ?>
@@ -347,7 +463,7 @@ $tables = [
                             <?php echo $request_date; ?>
                         </span>
                     </td>
-                    <td>
+                    <td class="reject-reason">
                         <?php 
                         echo !empty($row['reject_reason']) ? htmlspecialchars($row['reject_reason']) : '-'; 
                         ?>
@@ -363,6 +479,9 @@ $tables = [
                             <i class="fas fa-inbox"></i>
                             <h3>No Clearance Requests Found</h3>
                             <p>You haven't submitted any clearance requests for the <?php echo $current_academic_year; ?> academic year.</p>
+                            <p style="margin-top: 10px; font-size: 0.9rem; color: #6c757d;">
+                                Visit the Clearance Request page to submit your clearance applications.
+                            </p>
                         </div>
                     </td>
                 </tr>

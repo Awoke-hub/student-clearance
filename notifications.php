@@ -48,36 +48,38 @@ if ($result->num_rows > 0) {
 <style>
     .main-content {
         margin-left: 250px;
-        margin-top: 70px;
-        padding: 15px;
-        min-height: calc(100vh - 70px);
+        margin-top: 80px;
+        padding: 30px;
+        min-height: calc(100vh - 80px);
         background: var(--content-bg);
         color: var(--content-text);
+        width: calc(100% - 250px);
     }
 
     .notification-content-wrapper {
-        max-width: min(750px, 95%);
+        max-width: min(1200px, 98%);
         margin: 0 auto;
-        padding: 15px;
+        padding: 35px;
         background: white;
-        border-radius: 6px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border-radius: 12px;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
     }
 
     .page-header {
         text-align: center;
-        margin-bottom: 30px;
-        padding-top: 30px;
+        margin-bottom: 40px;
+        padding-top: 20px;
     }
 
     .page-title {
-        color: #2c3e50;
-        font-size: 24px;
+        color: var(--primary-color);
+        font-size: 2.5rem;
         font-weight: 700;
         margin: 0;
         position: relative;
         display: inline-block;
-        padding-bottom: 10px;
+        padding-bottom: 15px;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
     }
 
     .page-title::after {
@@ -86,39 +88,39 @@ if ($result->num_rows > 0) {
         bottom: 0;
         left: 50%;
         transform: translateX(-50%);
-        width: 80px;
-        height: 3px;
+        width: 120px;
+        height: 4px;
         background: linear-gradient(135deg, #3498db, #2c3e50);
-        border-radius: 2px;
+        border-radius: 3px;
     }
 
     .download-section {
         text-align: center;
-        margin: 30px 0 20px 0;
-        padding-top: 20px;
-        border-top: 1px solid #e0e0e0;
+        margin: 40px 0 30px 0;
+        padding-top: 30px;
+        border-top: 2px solid #e0e0e0;
     }
 
     .download-btn {
         background: linear-gradient(135deg, #3498db, #2980b9);
         color: white;
         border: none;
-        padding: 12px 25px;
-        border-radius: 6px;
+        padding: 15px 30px;
+        border-radius: 8px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 16px;
         font-weight: 600;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         transition: all 0.3s ease;
-        box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+        box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
     }
 
     .download-btn:hover {
         background: linear-gradient(135deg, #2980b9, #21618c);
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(52, 152, 219, 0.4);
+        box-shadow: 0 6px 12px rgba(52, 152, 219, 0.4);
     }
 
     .download-btn:active {
@@ -127,42 +129,58 @@ if ($result->num_rows > 0) {
 
     .clearance-card {
         background: white;
-        padding: 20px;
-        margin-bottom: 20px;
-        border-radius: 6px;
-        border: 1px solid #e0e0e0;
+        padding: 30px;
+        margin-bottom: 25px;
+        border-radius: 10px;
+        border: 2px solid #e0e0e0;
         position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .clearance-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
     .clearance-card.unread {
         border-color: #3498db;
         background: #f8fdff;
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
     }
 
     .clearance-card.approved {
         border-color: #28a745;
         background: #f8fff9;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
     }
 
     .clearance-card.rejected {
         border-color: #dc3545;
         background: #fff5f5;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
     }
 
     .status-result {
-        font-size: 18px;
+        font-size: 1.8rem;
         font-weight: bold;
-        padding: 12px 0;
+        padding: 20px 0;
         text-align: center;
-        margin-bottom: 20px;
-        border-bottom: 1px solid #ddd;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #ddd;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    .status-approved { color: #28a745; }
-    .status-rejected { color: #dc3545; }
+    .status-approved { 
+        color: #28a745; 
+        text-shadow: 1px 1px 2px rgba(40, 167, 69, 0.3);
+    }
+    .status-rejected { 
+        color: #dc3545; 
+        text-shadow: 1px 1px 2px rgba(220, 53, 69, 0.3);
+    }
 
     .student-info {
-        margin-bottom: 20px;
+        margin-bottom: 30px;
         position: relative;
     }
 
@@ -171,8 +189,8 @@ if ($result->num_rows > 0) {
         position: absolute;
         top: 0;
         right: 0;
-        width: 80px;
-        height: 80px;
+        width: 100px;
+        height: 100px;
         overflow: hidden;
     }
 
@@ -184,32 +202,32 @@ if ($result->num_rows > 0) {
 
     .info-line {
         display: flex;
-        margin-bottom: 8px;
-        padding: 6px 0;
+        margin-bottom: 12px;
+        padding: 8px 0;
         border-bottom: 1px dashed #eee;
     }
 
     .info-label {
         font-weight: bold;
-        width: 120px;
+        width: 160px;
         color: #2c3e50;
-        font-size: 14px;
+        font-size: 16px;
     }
 
     .info-value {
         flex: 1;
         color: #555;
-        font-size: 14px;
-        margin-right: 90px;
+        font-size: 16px;
+        margin-right: 110px;
     }
 
     .signature-section {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 25px;
-        padding-top: 15px;
-        border-top: 1px solid #ddd;
+        margin-top: 35px;
+        padding-top: 20px;
+        border-top: 2px solid #ddd;
     }
 
     .registrar-info {
@@ -218,18 +236,19 @@ if ($result->num_rows > 0) {
 
     .registrar-name {
         font-weight: bold;
-        font-size: 14px;
-        margin-bottom: 3px;
+        font-size: 18px;
+        margin-bottom: 5px;
+        color: #2c3e50;
     }
 
     .registrar-title {
         color: #666;
-        font-size: 12px;
+        font-size: 14px;
     }
 
     .signature-circle {
-        width: 100px;
-        height: 100px;
+        width: 120px;
+        height: 120px;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -237,47 +256,48 @@ if ($result->num_rows > 0) {
         background: #f8f9fa;
         position: relative;
         overflow: hidden;
-        border: 1px solid #2c3e50;
+        border: 2px solid #2c3e50;
     }
 
     .signature-image {
         width: 100%;
         height: 100%;
         object-fit: contain;
-        padding: 8px;
+        padding: 10px;
     }
 
     .signature-fallback {
         font-family: Arial, sans-serif;
-        font-size: 9px;
+        font-size: 11px;
         color: #2c3e50;
         text-align: center;
-        line-height: 1.2;
+        line-height: 1.3;
         font-weight: bold;
-        padding: 8px;
+        padding: 10px;
     }
 
     .date-section {
         text-align: center;
-        margin-top: 15px;
+        margin-top: 20px;
         color: #777;
         font-style: italic;
-        font-size: 13px;
+        font-size: 15px;
+        font-weight: 500;
     }
 
-    /* Simplified No Notifications Styling */
+    /* Enhanced No Notifications Styling */
     .no-notifications {
         text-align: center;
-        padding: 50px 30px;
+        padding: 60px 40px;
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 12px;
-        border: 2px dashed #dee2e6;
-        margin: 30px 0;
+        border-radius: 15px;
+        border: 3px dashed #dee2e6;
+        margin: 40px 0;
     }
 
     .no-notifications-icon {
-        font-size: 64px;
-        margin-bottom: 20px;
+        font-size: 80px;
+        margin-bottom: 25px;
         color: #6c757d;
         animation: bounce 2s ease-in-out infinite;
         display: block;
@@ -285,28 +305,29 @@ if ($result->num_rows > 0) {
 
     .no-notifications h3 {
         color: #495057;
-        font-size: 22px;
+        font-size: 28px;
         font-weight: 600;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
     }
 
     .no-notifications p {
         color: #6c757d;
-        font-size: 16px;
-        line-height: 1.5;
+        font-size: 18px;
+        line-height: 1.6;
         margin: 0;
     }
 
     .new-badge {
         position: absolute;
-        top: 10px;
-        right: 10px;
+        top: 15px;
+        right: 15px;
         background: #3498db;
         color: white;
-        padding: 3px 8px;
-        border-radius: 10px;
-        font-size: 10px;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 12px;
         font-weight: bold;
+        box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
     }
 
     /* Animations */
@@ -409,21 +430,41 @@ if ($result->num_rows > 0) {
         }
     }
 
+    /* Responsive adjustments */
+    @media (max-width: 1100px) {
+        .main-content {
+            margin-left: 220px;
+            width: calc(100% - 220px);
+        }
+    }
+
+    @media (max-width: 900px) {
+        .main-content {
+            margin-left: 200px;
+            width: calc(100% - 200px);
+        }
+
+        .notification-content-wrapper {
+            max-width: 95%;
+            padding: 25px;
+        }
+    }
+
     @media (max-width: 768px) {
         .main-content {
             margin-left: 0;
             width: 100%;
-            margin-top: 60px;
-            padding: 10px;
+            margin-top: 70px;
+            padding: 20px;
         }
         
         .clearance-card {
-            padding: 15px;
+            padding: 20px;
         }
         
         .university-logo {
             position: relative;
-            margin: 0 auto 15px auto;
+            margin: 0 auto 20px auto;
         }
         
         .info-line {
@@ -432,17 +473,19 @@ if ($result->num_rows > 0) {
         
         .info-label {
             width: 100%;
-            margin-bottom: 3px;
+            margin-bottom: 5px;
+            font-size: 14px;
         }
         
         .info-value {
             margin-right: 0;
+            font-size: 14px;
         }
         
         .signature-section {
             flex-direction: column;
             align-items: center;
-            gap: 15px;
+            gap: 20px;
         }
         
         .registrar-info {
@@ -450,17 +493,82 @@ if ($result->num_rows > 0) {
         }
         
         .signature-circle {
+            width: 100px;
+            height: 100px;
+        }
+
+        .no-notifications {
+            padding: 40px 25px;
+            margin: 30px 0;
+        }
+
+        .no-notifications-icon {
+            font-size: 60px;
+        }
+
+        .no-notifications h3 {
+            font-size: 24px;
+        }
+
+        .no-notifications p {
+            font-size: 16px;
+        }
+
+        .page-title {
+            font-size: 2rem;
+        }
+
+        .status-result {
+            font-size: 1.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .main-content {
+            padding: 15px;
+        }
+        
+        .notification-content-wrapper {
+            padding: 20px;
+        }
+        
+        .clearance-card {
+            padding: 15px;
+        }
+        
+        .page-title {
+            font-size: 1.8rem;
+        }
+        
+        .status-result {
+            font-size: 1.3rem;
+            padding: 15px 0;
+        }
+
+        .info-label,
+        .info-value {
+            font-size: 13px;
+        }
+
+        .signature-circle {
             width: 80px;
             height: 80px;
         }
 
+        .registrar-name {
+            font-size: 16px;
+        }
+
+        .registrar-title {
+            font-size: 12px;
+        }
+
         .no-notifications {
-            padding: 40px 20px;
-            margin: 20px 0;
+            padding: 30px 20px;
         }
 
         .no-notifications-icon {
-            font-size: 48px;
+            font-size: 50px;
         }
 
         .no-notifications h3 {
@@ -468,6 +576,11 @@ if ($result->num_rows > 0) {
         }
 
         .no-notifications p {
+            font-size: 14px;
+        }
+
+        .download-btn {
+            padding: 12px 25px;
             font-size: 14px;
         }
     }
@@ -552,11 +665,11 @@ if ($result->num_rows > 0) {
                 </div>
             <?php endwhile; ?>
         <?php else: ?>
-            <!-- Simplified No Notifications Section -->
+            <!-- Enhanced No Notifications Section -->
             <div class="no-notifications">
                 <div class="no-notifications-icon">📋</div>
                 <h3>You have no clearance notifications yet</h3>
-                <p>Wait until all departments approve you</p>
+                <p>Wait until all departments approve your clearance requests</p>
             </div>
         <?php endif; ?>
 
@@ -564,7 +677,7 @@ if ($result->num_rows > 0) {
         <?php if ($show_download_button): ?>
         <div class="download-section">
             <button class="download-btn" onclick="downloadClearance()">
-                <span>📥</span> Download PDF
+                <span>📥</span> Download Clearance Certificate
             </button>
         </div>
         <?php endif; ?>
@@ -585,3 +698,5 @@ document.addEventListener('keydown', function(e) {
     }
 });
 </script>
+
+

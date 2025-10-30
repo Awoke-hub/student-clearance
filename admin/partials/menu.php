@@ -5,12 +5,15 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Ensure only system admins can access
 if (!isset($_SESSION['admin_id']) || $_SESSION['admin_role'] != 'system_admin') {
-    header("Location: login.php");
+    header("Location: ../login.php");
     exit();
 }
 
 // Full Name from Session
 $full_name = htmlspecialchars($_SESSION['admin_name'] . ' ' . $_SESSION['admin_last_name']);
+
+// Get current page for active link highlighting
+$current_page = basename($_SERVER['PHP_SELF']);
 ?>
 
 <style>
@@ -82,6 +85,9 @@ $full_name = htmlspecialchars($_SESSION['admin_name'] . ' ' . $_SESSION['admin_l
         border-radius: 5px;
         transition: var(--transition);
         white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
     
     .navbar a:hover {
@@ -105,6 +111,9 @@ $full_name = htmlspecialchars($_SESSION['admin_name'] . ' ' . $_SESSION['admin_l
         color: var(--text-light);
         font-size: clamp(14px, 1vw, 16px);
         white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
     
     .navbar .logout-btn {
@@ -116,6 +125,9 @@ $full_name = htmlspecialchars($_SESSION['admin_name'] . ' ' . $_SESSION['admin_l
         font-size: clamp(14px, 1vw, 16px);
         transition: var(--transition);
         white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
     
     .navbar .logout-btn:hover {
@@ -195,14 +207,17 @@ $full_name = htmlspecialchars($_SESSION['admin_name'] . ' ' . $_SESSION['admin_l
     
     <div class="nav-container" id="navContainer">
         <div class="nav-links">
-            <a href="system_admin_panel.php" class="<?= basename($_SERVER['PHP_SELF']) == 'system_admin_panel.php' ? 'active' : '' ?>">
+            <a href="system_admin_panel.php" class="<?= $current_page == 'system_admin_panel.php' ? 'active' : '' ?>">
                 <i class="fas fa-home"></i> Dashboard
             </a>
-            <a href="manage-students.php" class="<?= basename($_SERVER['PHP_SELF']) == 'manage-students.php' ? 'active' : '' ?>">
+            <a href="manage-students.php" class="<?= $current_page == 'manage-students.php' ? 'active' : '' ?>">
                 <i class="fas fa-users"></i> Manage Students
             </a>
-            <a href="manage-admins.php" class="<?= basename($_SERVER['PHP_SELF']) == 'manage-admins.php' ? 'active' : '' ?>">
+            <a href="manage-admins.php" class="<?= $current_page == 'manage-admins.php' ? 'active' : '' ?>">
                 <i class="fas fa-user-shield"></i> Manage Admins
+            </a>
+            <a href="clearance-settings.php" class="<?= $current_page == 'clearance-settings.php' ? 'active' : '' ?>">
+                <i class="fas fa-cog"></i> Clearance Settings
             </a>
         </div>
         
@@ -210,7 +225,7 @@ $full_name = htmlspecialchars($_SESSION['admin_name'] . ' ' . $_SESSION['admin_l
             <span class="welcome-text">
                 <i class="fas fa-user-circle"></i> Welcome, <?= $full_name; ?>
             </span>
-            <a class="logout-btn" href="logout.php">
+            <a class="logout-btn" href="logout.php" onclick="return confirm('Are you sure you want to logout?')">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </a>
         </div>
@@ -229,5 +244,21 @@ $full_name = htmlspecialchars($_SESSION['admin_name'] . ' ' . $_SESSION['admin_l
         const icon = this.querySelector('i');
         icon.classList.toggle('fa-bars');
         icon.classList.toggle('fa-times');
+    });
+
+    // Close mobile menu when clicking on a link (for better mobile UX)
+    document.querySelectorAll('.nav-links a').forEach(link => {
+        link.addEventListener('click', function() {
+            const navContainer = document.getElementById('navContainer');
+            const menuToggle = document.getElementById('menuToggle');
+            
+            if (window.innerWidth <= 768) {
+                navContainer.classList.remove('active');
+                menuToggle.setAttribute('aria-expanded', 'false');
+                const icon = menuToggle.querySelector('i');
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        });
     });
 </script>

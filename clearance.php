@@ -19,11 +19,74 @@ if (!isset($_SESSION['student_id'])) {
 // Debug session
 echo "<!-- Debug: Session student_id = " . ($_SESSION['student_id'] ?? 'NOT SET') . " -->";
 
-// Get current academic year (Academic year starts in September)
-$current_month = date('n');
+// Get current academic year - FIXED to match your database format
 $current_year = date('Y');
-$academic_year = ($current_month >= 9) ? $current_year : $current_year - 1;
-$next_academic_year = $academic_year + 1;
+$next_year = $current_year + 1;
+$academic_year = $current_year . '-' . $next_year; 
+
+// Debug academic year
+echo "<!-- Debug: Academic year = " . $academic_year . " -->";
+
+// =================== CHECK CLEARANCE SYSTEM STATUS ===================
+$system_active = false;
+$system_message = "";
+$current_server_time = time(); // Server timestamp
+
+// Get clearance settings
+try {
+    // Check if clearance_settings table exists
+    $table_check = $conn->query("SHOW TABLES LIKE 'clearance_settings'");
+    
+    if ($table_check->num_rows > 0) {
+        // Get clearance system status for current academic year
+        $settings_stmt = $conn->prepare("SELECT start_date, end_date, is_active FROM clearance_settings WHERE academic_year = ?");
+        $settings_stmt->bind_param("s", $academic_year);
+        $settings_stmt->execute();
+        $settings_result = $settings_stmt->get_result();
+        
+        if ($settings_result->num_rows > 0) {
+            $settings = $settings_result->fetch_assoc();
+            
+            // Convert dates to timestamps for comparison
+            $start_timestamp = strtotime($settings['start_date']);
+            $end_timestamp = strtotime($settings['end_date']);
+            
+            // Debug the settings found
+            echo "<!-- Debug: Settings found - start_date: " . $settings['start_date'] . ", end_date: " . $settings['end_date'] . ", is_active: " . $settings['is_active'] . " -->";
+            echo "<!-- Debug: Start timestamp: " . $start_timestamp . " -->";
+            echo "<!-- Debug: End timestamp: " . $end_timestamp . " -->";
+            echo "<!-- Debug: Current server timestamp: " . $current_server_time . " -->";
+            
+            if ($settings['is_active']) {
+                if ($current_server_time >= $start_timestamp && $current_server_time <= $end_timestamp) {
+                    $system_active = true;
+                    $system_message = "Clearance system is OPEN until " . date('F j, Y g:i A', $end_timestamp);
+                } elseif ($current_server_time < $start_timestamp) {
+                    $system_active = false;
+                    $system_message = "Clearance system opens on " . date('F j, Y g:i A', $start_timestamp);
+                } else {
+                    $system_active = false;
+                    $system_message = "Clearance system closed on " . date('F j, Y g:i A', $end_timestamp);
+                }
+            } else {
+                $system_active = false;
+                $system_message = "Clearance system is currently CLOSED by administration";
+            }
+        } else {
+            // If no settings found for current academic year
+            $system_message = "Clearance system settings not configured for academic year " . $academic_year;
+        }
+        $settings_stmt->close();
+    } else {
+        $system_message = "Clearance system not configured. Please contact administrator.";
+    }
+} catch (Exception $e) {
+    $system_message = "Error checking system status: " . $e->getMessage();
+}
+
+// Debug system status
+echo "<!-- Debug: System active = " . ($system_active ? 'YES' : 'NO') . " -->";
+echo "<!-- Debug: System message = " . htmlspecialchars($system_message) . " -->";
 
 // Get student data from database INCLUDING STATUS
 $student = null;
@@ -56,11 +119,12 @@ $selected_option = "";
 // NEW LOGIC: Check if student has clearance for CURRENT academic year
 $has_current_clearance = false;
 try {
+    // Use the same academic year format
     $stmt = $conn->prepare("SELECT status FROM final_clearance WHERE student_id = ? AND academic_year = ?");
     if (!$stmt) {
         throw new Exception("Prepare failed: " . $conn->error);
     }
-    $stmt->bind_param("si", $_SESSION['student_id'], $academic_year);
+    $stmt->bind_param("ss", $_SESSION['student_id'], $academic_year);
     $stmt->execute();
     $clearance_result = $stmt->get_result();
 
@@ -75,10 +139,11 @@ try {
 
 $is_student_active = ($student['status'] === 'active');
 
-// NEW LOGIC: Student can submit requests if:
+// UPDATED LOGIC: Student can submit requests if:
 // 1. Account is active AND 
 // 2. Doesn't have clearance for current academic year
-$can_submit_requests = $is_student_active && !$has_current_clearance;
+// 3. Clearance system is active
+$can_submit_requests = $is_student_active && !$has_current_clearance && $system_active;
 
 // Debug submission status
 echo "<!-- Debug: Can submit requests = " . ($can_submit_requests ? 'YES' : 'NO') . " -->";
@@ -122,7 +187,7 @@ if (isset($_POST['submit_all_clearance']) && $can_submit_requests) {
                     throw new Exception("Prepare failed for $table_name: " . $conn->error);
                 }
                 
-                $check->bind_param("si", $student['student_id'], $academic_year);
+                $check->bind_param("ss", $student['student_id'], $academic_year);
                 $check->execute();
                 $check_result = $check->get_result();
                 
@@ -140,7 +205,7 @@ if (isset($_POST['submit_all_clearance']) && $can_submit_requests) {
                     throw new Exception("Prepare failed for insert into $table_name: " . $conn->error);
                 }
                 
-                $stmt->bind_param("sssssi", 
+                $stmt->bind_param("ssssss",
                     $student['student_id'],
                     $student['name'],
                     $student['last_name'],
@@ -208,9 +273,27 @@ if (isset($_SESSION['error_message'])) {
     unset($_SESSION['error_message']);
 }
 
+// Calculate time remaining for display (using server time)
+$time_remaining = 0;
+$days_remaining = 0;
+$hours_remaining = 0;
+$minutes_remaining = 0;
+
+if ($system_active && isset($settings)) {
+    $end_timestamp = strtotime($settings['end_date']);
+    $time_remaining = $end_timestamp - $current_server_time;
+    
+    if ($time_remaining > 0) {
+        $days_remaining = floor($time_remaining / (60 * 60 * 24));
+        $hours_remaining = floor(($time_remaining % (60 * 60 * 24)) / (60 * 60));
+        $minutes_remaining = floor(($time_remaining % (60 * 60)) / 60);
+    }
+}
+
 // Debug final state
 echo "<!-- Debug: Final message = " . htmlspecialchars($message) . " -->";
-echo "<!-- Debug: Selected option = " . htmlspecialchars($selected_option) . " -->";
+echo "<!-- Debug: Time remaining: " . $time_remaining . " seconds -->";
+echo "<!-- Debug: Days remaining: " . $days_remaining . " -->";
 ?>
 
 <style>
@@ -224,41 +307,154 @@ echo "<!-- Debug: Selected option = " . htmlspecialchars($selected_option) . " -
     }
 
     .clearance-container {
-        max-width: min(800px, 95%);
+        max-width: min(1200px, 95%);
         margin: 0;
         background: white;
         padding: 25px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         height: auto;
     }
 
-    .clearance-container h2 {
+    .clearance-header {
         text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 3px solid #3498db;
+    }
+
+    .clearance-header h2 {
         color: var(--primary-color);
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .clearance-header .subtitle {
+        color: #666;
+        font-size: 1.1rem;
+        font-style: italic;
+    }
+
+    /* Simplified Status Display */
+    .status-summary {
+        background: #f8f9fa;
+        padding: 18px;
+        border-radius: 8px;
         margin-bottom: 20px;
-        font-size: 24px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #bdc3c7;
+        text-align: center;
+        border-left: 4px solid #3498db;
+    }
+
+    .status-icon {
+        font-size: 2.5rem;
+        margin-bottom: 12px;
+    }
+
+    .status-title {
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #2c3e50;
+    }
+
+    .status-message {
+        font-size: 1rem;
+        color: #666;
+        line-height: 1.4;
+    }
+
+    /* Deadline Information */
+    .deadline-info {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .deadline-info.urgent {
+        background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+        border: 1px solid #dc3545;
+    }
+
+    .deadline-info.expired {
+        background: linear-gradient(135deg, #e9ecef, #dee2e6);
+        border: 1px solid #6c757d;
+        color: #6c757d;
+    }
+
+    .deadline-icon {
+        font-size: 1.5rem;
+        margin-bottom: 8px;
+    }
+
+    .deadline-text {
+        font-size: 0.9rem;
+        color: #856404;
+        font-weight: 500;
+        line-height: 1.4;
+    }
+
+    .deadline-info.urgent .deadline-text {
+        color: #721c24;
+    }
+
+    .deadline-info.expired .deadline-text {
+        color: #495057;
+    }
+
+    .deadline-command {
+        font-size: 0.85rem;
+        margin-top: 8px;
+        font-weight: 600;
+        color: #856404;
+    }
+
+    .deadline-info.urgent .deadline-command {
+        color: #721c24;
+    }
+
+    .deadline-info.expired .deadline-command {
+        color: #495057;
+    }
+
+    .time-remaining {
+        font-size: 1rem;
+        font-weight: bold;
+        margin: 5px 0;
+        color: #d35400;
+        font-family: 'Courier New', monospace;
+    }
+
+    .deadline-info.urgent .time-remaining {
+        color: #c0392b;
+    }
+
+    .deadline-info.expired .time-remaining {
+        color: #6c757d;
     }
 
     .form-group {
-        margin-bottom: 20px;
+        margin-bottom: 18px;
     }
 
     .form-group label {
         display: block;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         font-weight: 600;
         color: var(--content-text);
+        font-size: 0.9rem;
     }
 
     .form-control {
         width: 100%;
-        padding: 12px;
+        padding: 10px;
         border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 15px;
+        border-radius: 5px;
+        font-size: 14px;
         transition: all 0.3s ease;
         box-sizing: border-box;
         background: white;
@@ -267,7 +463,7 @@ echo "<!-- Debug: Selected option = " . htmlspecialchars($selected_option) . " -
     .form-control:focus {
         border-color: var(--primary-color);
         outline: none;
-        box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.2);
+        box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.2);
     }
 
     .form-control[readonly] {
@@ -284,28 +480,45 @@ echo "<!-- Debug: Selected option = " . htmlspecialchars($selected_option) . " -
     }
 
     textarea.form-control {
-        min-height: 100px;
+        min-height: 90px;
         resize: vertical;
+    }
+
+    .char-counter {
+        font-size: 0.8rem;
+        color: #666;
+        text-align: right;
+        margin-top: 5px;
+    }
+
+    .char-counter.warning {
+        color: #ffc107;
+        font-weight: 600;
+    }
+
+    .char-counter.error {
+        color: #dc3545;
+        font-weight: 600;
     }
 
     .btn {
         display: block;
         width: 100%;
-        padding: 14px;
+        padding: 12px;
         background: var(--primary-color);
         color: white;
         border: none;
-        border-radius: 6px;
-        font-size: 16px;
-        font-weight: bold;
+        border-radius: 5px;
+        font-size: 15px;
+        font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
-        margin-top: 20px;
+        margin-top: 18px;
     }
 
     .btn:hover {
         background: var(--hover-color);
-        transform: translateY(-2px);
+        transform: translateY(-1px);
     }
 
     .btn:disabled {
@@ -321,16 +534,17 @@ echo "<!-- Debug: Selected option = " . htmlspecialchars($selected_option) . " -
     }
 
     .alert {
-        padding: 15px;
-        margin-bottom: 20px;
-        border-radius: 6px;
+        padding: 12px 15px;
+        margin-bottom: 18px;
+        border-radius: 5px;
         font-weight: bold;
         position: relative;
         animation: slideIn 0.5s ease-out;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         border-left: 4px solid;
+        font-size: 0.9rem;
     }
 
     .alert-success {
@@ -361,11 +575,11 @@ echo "<!-- Debug: Selected option = " . htmlspecialchars($selected_option) . " -
         margin-left: auto;
         background: none;
         border: none;
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         cursor: pointer;
         color: inherit;
         opacity: 0.7;
-        padding: 0 5px;
+        padding: 0 4px;
     }
 
     .alert-close:hover {
@@ -376,7 +590,7 @@ echo "<!-- Debug: Selected option = " . htmlspecialchars($selected_option) . " -
         position: absolute;
         bottom: 0;
         left: 0;
-        height: 4px;
+        height: 3px;
         background-color: rgba(0,0,0,0.1);
         width: 100%;
     }
@@ -388,85 +602,65 @@ echo "<!-- Debug: Selected option = " . htmlspecialchars($selected_option) . " -
         animation: timer 5s linear forwards;
     }
 
-    .academic-year-badge {
-        display: inline-block;
-        padding: 8px 16px;
-        background: #3498db;
-        color: white;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        margin-bottom: 20px;
-    }
-
-    .clearance-status {
-        text-align: center;
-        padding: 15px;
-        margin-bottom: 20px;
-        background: #f8f9fa;
-        border-radius: 6px;
-        border: 1px solid #e9ecef;
-        font-weight: 500;
-    }
-
-    .status-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        margin-left: 10px;
-    }
-
-    .status-available {
-        background-color: #d4edda;
-        color: #155724;
-    }
-
-    .status-completed {
-        background-color: #f8d7da;
-        color: #721c24;
-    }
-
-    .status-inactive {
-        background-color: #fff3cd;
-        color: #856404;
-    }
-
-    .student-status-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        margin-left: 10px;
-    }
-
-    .student-active {
-        background-color: #d4edda;
-        color: #155724;
-    }
-
-    .student-inactive {
-        background-color: #f8d7da;
-        color: #721c24;
-    }
-
     /* New styles for single clearance system */
     .bulk-request-info {
-        background: #e8f5e8;
+        background: linear-gradient(135deg, #e8f5e8, #d4edda);
         border: 1px solid #28a745;
-        border-radius: 6px;
-        padding: 15px;
+        border-radius: 8px;
+        padding: 18px;
         margin-bottom: 20px;
     }
     
     .bulk-request-info h4 {
         color: #155724;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         display: flex;
         align-items: center;
         gap: 8px;
+        font-size: 1.1rem;
+    }
+
+    .bulk-request-info ul {
+        margin: 12px 0;
+        padding-left: 20px;
+    }
+
+    .bulk-request-info li {
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+    }
+
+    .bulk-request-info p {
+        font-size: 0.85rem;
+        margin: 8px 0;
+    }
+
+    /* Progress bar for time remaining */
+    .time-progress {
+        margin: 10px 0;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: #28a745;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .progress-fill.urgent {
+        background: #dc3545;
+    }
+
+    .progress-fill.warning {
+        background: #ffc107;
     }
 
     @keyframes timer {
@@ -475,7 +669,7 @@ echo "<!-- Debug: Selected option = " . htmlspecialchars($selected_option) . " -
     }
 
     @keyframes slideIn {
-        from { transform: translateY(-20px); opacity: 0; }
+        from { transform: translateY(-15px); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
     }
 
@@ -503,13 +697,21 @@ echo "<!-- Debug: Selected option = " . htmlspecialchars($selected_option) . " -
         }
         
         .clearance-container {
-            padding: 25px;
+            padding: 20px;
             margin: 0 auto;
             max-width: 95%;
         }
         
-        .clearance-container h2 {
-            font-size: 20px;
+        .clearance-header h2 {
+            font-size: 2rem;
+        }
+        
+        .status-icon {
+            font-size: 2rem;
+        }
+        
+        .status-title {
+            font-size: 1.1rem;
         }
     }
 
@@ -519,57 +721,116 @@ echo "<!-- Debug: Selected option = " . htmlspecialchars($selected_option) . " -
         }
         
         .clearance-container {
-            padding: 20px;
+            padding: 18px;
             margin: 10px auto;
         }
         
-        .clearance-container h2 {
-            font-size: 18px;
+        .clearance-header h2 {
+            font-size: 1.8rem;
         }
         
         .btn {
-            padding: 12px;
+            padding: 10px;
+            font-size: 14px;
         }
         
         .form-control {
-            padding: 10px;
+            padding: 8px;
+            font-size: 13px;
         }
     }
 </style>
 
 <div class="main-content">
     <div class="clearance-container">
-        <h2>Clearance Request System</h2>
-        
-        <!-- Display Academic Year -->
-        <div style="text-align: center; margin-bottom: 20px;">
-            <span class="academic-year-badge">
-                Academic Year: <?= $academic_year ?>-<?= $next_academic_year ?>
-            </span>
+        <!-- Header Section -->
+        <div class="clearance-header">
+            <h3>🎓 Clearance Request System</h3>
+            <div class="subtitle">Submit your clearance requests for all departments in one go</div>
         </div>
         
-        <!-- Display Student Status -->
-        <div class="clearance-status">
-            Your Account Status: 
-            <span class="student-status-badge student-<?= htmlspecialchars($student['status']) ?>">
-                <?= strtoupper(htmlspecialchars($student['status'])) ?>
-            </span>
+        <!-- Deadline Information -->
+        <?php if ($system_active && isset($settings)): 
+            $end_timestamp = strtotime($settings['end_date']);
+            $start_timestamp = strtotime($settings['start_date']);
+            $total_duration = $end_timestamp - $start_timestamp;
+            $progress = $total_duration > 0 ? min(100, max(0, (($end_timestamp - $current_server_time) / $total_duration) * 100)) : 0;
+            
+            $is_urgent = $days_remaining <= 2;
+            $is_expired = $time_remaining <= 0;
+        ?>
+            <div class="deadline-info <?= $is_expired ? 'expired' : ($is_urgent ? 'urgent' : '') ?>">
+                <div class="deadline-icon">
+                    <?= $is_expired ? '⏰' : ($is_urgent ? '🚨' : '⏰') ?>
+                </div>
+                <div class="deadline-text">
+                    <strong>Clearance Deadline:</strong> 
+                    <?= date('F j, Y \a\t g:i A', $end_timestamp) ?>
+                </div>
+                <div class="time-remaining" id="timeRemaining">
+                    <?php if (!$is_expired): ?>
+                        <?= $days_remaining ?> days, <?= $hours_remaining ?> hours, <?= $minutes_remaining ?> minutes remaining
+                    <?php else: ?>
+                        Time Expired
+                    <?php endif; ?>
+                </div>
+                
+                <?php if (!$is_expired): ?>
+                <div class="time-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill <?= $is_urgent ? 'urgent' : ($days_remaining <= 7 ? 'warning' : '') ?>" 
+                             id="timeProgress" 
+                             style="width: <?= $progress ?>%">
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <div class="deadline-command">
+                    <?php if ($is_expired): ?>
+                        ❌ <strong>Deadline Passed:</strong> Clearance system is no longer accepting submissions
+                    <?php elseif ($days_remaining > 7): ?>
+                        📋 <strong>Plan ahead:</strong> Submit your clearance request early to avoid last-minute issues
+                    <?php elseif ($days_remaining > 3): ?>
+                        ⚡ <strong>Time to act:</strong> Complete your clearance submission this week
+                    <?php elseif ($days_remaining > 1): ?>
+                        🚨 <strong>Urgent:</strong> Submit your clearance immediately to meet the deadline
+                    <?php else: ?>
+                        🔥 <strong>Critical:</strong> Final day! Submit your clearance NOW before time runs out
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+        
+        <!-- Single Status Summary -->
+        <div class="status-summary">
+            <?php if (!$system_active): ?>
+                <div class="status-icon">🔒</div>
+                <div class="status-title">Clearance System Closed</div>
+                <div class="status-message">
+                    The clearance system is currently not available for submissions.<br>
+                    <strong>Reason:</strong> <?= htmlspecialchars($system_message) ?>
+                </div>
+            <?php elseif (!$is_student_active): ?>
+                <div class="status-icon">⚠️</div>
+                <div class="status-title">Account Inactive</div>
+                <div class="status-message">
+                    You cannot submit clearance requests with an inactive account.<br>
+                    Please contact the registrar office to activate your student account.
+                </div>
+            <?php elseif (!$can_submit_requests): ?>
+                <div class="status-icon">✅</div>
+                <div class="status-title">Clearance Completed</div>
+                <div class="status-message">
+                    You have successfully completed the clearance process for the <?= $academic_year ?> academic year.<br>
+                    New clearance requests will open when the next academic year begins.
+                </div>
+            <?php else: ?>
+                <!-- No content shown when student is eligible to submit requests -->
+            <?php endif; ?>
         </div>
         
-        <!-- Display Clearance Status -->
-        <div class="clearance-status">
-            Clearance Status: 
-            <span class="status-badge status-<?= 
-                !$is_student_active ? 'inactive' : 
-                ($can_submit_requests ? 'available' : 'completed') 
-            ?>">
-                <?= 
-                    !$is_student_active ? 'ACCOUNT INACTIVE' : 
-                    ($can_submit_requests ? 'AVAILABLE' : 'COMPLETED') 
-                ?>
-            </span>
-        </div>
-        
+        <!-- Success/Error Messages -->
         <?php if (!empty($message)): ?>
             <div class="alert <?= 
                 $message_type == 'success' ? 'alert-success' : 
@@ -590,63 +851,159 @@ echo "<!-- Debug: Selected option = " . htmlspecialchars($selected_option) . " -
         <?php endif; ?>
 
         <!-- Single Clearance Request System -->
-        <div class="bulk-request-info">
-            <h4>🚀 Submit Once, Clear Everywhere</h4>
-            <p>Submit a single clearance request that will automatically create clearance records for all departments:</p>
-            <ul style="margin: 10px 0; padding-left: 20px;">
-                <li>📚 Library Clearance</li>
-                <li>🍽️ Cafeteria Clearance</li>
-                <li>🏠 Dormitory Clearance</li>
-                <li>🏛️ Department Clearance</li>
-                <li>🎓 Registrar Clearance</li>
-            </ul>
-        </div>
+        <?php if ($system_active && $is_student_active && $can_submit_requests): ?>
+            <div class="bulk-request-info">
+                <h4>🚀 Submit Once, Clear Everywhere</h4>
+                <p>Submit a single clearance request that will automatically create clearance records for all departments:</p>
+                <ul>
+                    <li>📚 Library Clearance</li>
+                    <li>🍽️ Cafeteria Clearance</li>
+                    <li>🏠 Dormitory Clearance</li>
+                    <li>🏛️ Department Clearance</li>
+                    <li>🎓 Registrar Clearance</li>
+                </ul>
+                <?php if (isset($days_remaining) && $time_remaining > 0): ?>
+                    <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #ffc107;">
+                        <strong>⏰ Deadline Alert:</strong> 
+                        <?php if ($days_remaining > 7): ?>
+                            You have <strong><?= $days_remaining ?> days</strong> to complete your clearance. Submit early!
+                        <?php elseif ($days_remaining > 3): ?>
+                            Only <strong><?= $days_remaining ?> days</strong> left! Complete your clearance this week.
+                        <?php elseif ($days_remaining > 1): ?>
+                            <strong>Urgent:</strong> Only <?= $days_remaining ?> days remaining! Submit immediately.
+                        <?php else: ?>
+                            <strong>Final Day:</strong> Submit NOW before the deadline closes!
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+                <p style="margin-top: 8px; font-style: italic; color: #155724;">
+                    <strong>Note:</strong> Your request will be reviewed by each department separately.
+                </p>
+            </div>
 
-        <?php if (!$is_student_active): ?>
-            <div class="alert alert-warning">
-                ⚠️ <strong>Account Inactive</strong><br>
-                You cannot submit clearance requests. Please contact the registrar office to activate your account.
-            </div>
-        <?php elseif (!$can_submit_requests): ?>
-            <div class="alert alert-info">
-                ✅ <strong>Clearance Completed</strong><br>
-                You have successfully completed the clearance process for the <?= $academic_year ?>-<?= $next_academic_year ?> academic year. 
-                New clearance requests will automatically open when the next academic year begins in September.
-            </div>
-        <?php else: ?>
-            <form method="POST">
+            <form method="POST" id="clearanceForm">
                 <input type="hidden" name="submit_all_clearance" value="1">
                 
                 <div class="form-group">
-                    <label>First Name:</label>
+                    <label>👤 First Name:</label>
                     <input type="text" class="form-control" value="<?= htmlspecialchars($student['name']) ?>" readonly>
                 </div>
 
                 <div class="form-group">
-                    <label>Last Name:</label>
+                    <label>👤 Last Name:</label>
                     <input type="text" class="form-control" value="<?= htmlspecialchars($student['last_name']) ?>" readonly>
                 </div>
 
                 <div class="form-group">
-                    <label>Department:</label>
+                    <label>🏛️ Department:</label>
                     <input type="text" class="form-control" value="<?= htmlspecialchars($student['department']) ?>" readonly>
                 </div>
 
                 <div class="form-group">
-                    <label for="reason">Reason for Clearance:</label>
+                    <label for="reason">📝 Reason for Clearance:</label>
                     <textarea class="form-control" name="reason" id="reason" rows="4" required 
-                              placeholder="Enter your reason for clearance ..."><?= isset($_POST['reason']) ? htmlspecialchars($_POST['reason']) : '' ?></textarea>
+                              maxlength="500"
+                              placeholder="Please explain why you need clearance Maximum 500 characters..."><?= isset($_POST['reason']) ? htmlspecialchars($_POST['reason']) : '' ?></textarea>
+                    <div class="char-counter" id="charCounter">
+                        <span id="charCount">0</span>/500 characters
+                    </div>
                 </div>
 
-                <button type="submit" class="btn" style="background: #28a745;">
+                <button type="submit" class="btn" style="background: linear-gradient(135deg, #28a745, #20c997);">
                     🚀 Submit Clearance to All Departments
                 </button>
+                
+                <?php if (isset($days_remaining) && $days_remaining <= 3 && $time_remaining > 0): ?>
+                    <div style="text-align: center; margin-top: 10px; font-size: 0.85rem; color: #d35400; font-weight: 600;">
+                        ⏰ Don't delay! Complete your submission now to meet the deadline.
+                    </div>
+                <?php endif; ?>
             </form>
         <?php endif; ?>
     </div>
 </div>
 
 <script>
+    // Server time in milliseconds (from PHP)
+    const serverTime = <?= $current_server_time * 1000 ?>;
+    const endTime = <?= isset($end_timestamp) ? $end_timestamp * 1000 : 0 ?>;
+    const startTime = <?= isset($start_timestamp) ? $start_timestamp * 1000 : 0 ?>;
+    
+    // Calculate client-server time difference
+    const clientTime = new Date().getTime();
+    const timeDiff = clientTime - serverTime;
+    
+    console.log('Server Time:', new Date(serverTime));
+    console.log('Client Time:', new Date(clientTime));
+    console.log('Time Difference:', timeDiff + 'ms');
+    console.log('End Time:', new Date(endTime));
+    
+    // Real-time countdown update using SERVER TIME as reference
+    function updateCountdown() {
+        if (endTime === 0) return;
+        
+        const now = new Date().getTime() - timeDiff; // Adjust for time difference
+        const timeRemaining = endTime - now;
+        
+        if (timeRemaining > 0) {
+            const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+            
+            const timeRemainingElement = document.getElementById('timeRemaining');
+            if (timeRemainingElement) {
+                timeRemainingElement.textContent = days + ' days, ' + hours + ' hours, ' + minutes + ' minutes remaining';
+            }
+            
+            // Update progress bar
+            const totalDuration = endTime - startTime;
+            if (totalDuration > 0) {
+                const progress = Math.min(100, Math.max(0, (timeRemaining / totalDuration) * 100));
+                const progressFill = document.getElementById('timeProgress');
+                if (progressFill) {
+                    progressFill.style.width = progress + '%';
+                    
+                    // Update progress bar color based on urgency
+                    if (days <= 2) {
+                        progressFill.className = 'progress-fill urgent';
+                    } else if (days <= 7) {
+                        progressFill.className = 'progress-fill warning';
+                    } else {
+                        progressFill.className = 'progress-fill';
+                    }
+                }
+            }
+        } else {
+            const timeRemainingElement = document.getElementById('timeRemaining');
+            if (timeRemainingElement) {
+                timeRemainingElement.textContent = 'Time Expired';
+            }
+            const progressFill = document.getElementById('timeProgress');
+            if (progressFill) {
+                progressFill.style.width = '0%';
+                progressFill.className = 'progress-fill urgent';
+            }
+            
+            // Disable form if time expired
+            const form = document.getElementById('clearanceForm');
+            if (form) {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '❌ Deadline Passed - Submissions Closed';
+                    submitBtn.style.background = '#6c757d';
+                }
+            }
+        }
+    }
+    
+    // Update countdown every second for accuracy
+    setInterval(updateCountdown, 1000);
+    
+    // Initial update
+    updateCountdown();
+
     // Auto-dismiss alert after 5 seconds
     document.addEventListener('DOMContentLoaded', function() {
         const alerts = document.querySelectorAll('.alert');
@@ -655,6 +1012,69 @@ echo "<!-- Debug: Selected option = " . htmlspecialchars($selected_option) . " -
                 dismissAlert(alert.id);
             }, 5000);
         });
+
+        // Character counter for reason textarea
+        const reasonTextarea = document.getElementById('reason');
+        const charCounter = document.getElementById('charCounter');
+        const charCount = document.getElementById('charCount');
+
+        if (reasonTextarea) {
+            // Initialize character count
+            updateCharCount();
+
+            // Update on input
+            reasonTextarea.addEventListener('input', updateCharCount);
+
+            function updateCharCount() {
+                const length = reasonTextarea.value.length;
+                charCount.textContent = length;
+
+                // Update counter color based on length
+                if (length > 450) {
+                    charCounter.className = 'char-counter error';
+                } else if (length > 400) {
+                    charCounter.className = 'char-counter warning';
+                } else {
+                    charCounter.className = 'char-counter';
+                }
+            }
+        }
+
+        // Form validation
+        const form = document.getElementById('clearanceForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const reason = document.getElementById('reason').value.trim();
+                
+                if (reason.length === 0) {
+                    e.preventDefault();
+                    alert('Please enter a reason for clearance.');
+                    return false;
+                }
+
+                if (reason.length > 500) {
+                    e.preventDefault();
+                    alert('Reason must be 500 characters or less.');
+                    return false;
+                }
+                
+                // Urgent deadline warning
+                const timeRemaining = endTime - (new Date().getTime() - timeDiff);
+                const daysRemaining = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+                
+                if (daysRemaining <= 1) {
+                    if (!confirm('🚨 FINAL DAY ALERT! This is your last chance to submit clearance. Are you sure you want to proceed?')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                } else if (daysRemaining <= 3) {
+                    if (!confirm('⚠️ URGENT: Only ' + daysRemaining + ' days left until deadline. Are you ready to submit?')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            });
+        }
     });
 
     function dismissAlert(alertId) {
