@@ -33,7 +33,7 @@ $clearance_settings = $settings_result->fetch_assoc();
 // If no settings exist for current academic year, create default ones
 if (!$clearance_settings) {
     $default_start = date('Y-m-d H:i:s');
-    $default_end = date('Y-m-d H:i:s', strtotime('+30 days'));
+    $default_end = date('Y-m-d H:i:s', strtotime('+7 days')); // Changed from 30 to 7 days
     
     $stmt = $conn->prepare("INSERT INTO clearance_settings (academic_year, start_date, end_date, is_active) VALUES (?, ?, ?, ?)");
     $is_active = 0; // Inactive by default
@@ -136,11 +136,11 @@ if (isset($_GET['action'])) {
             
         case 'start_now':
             $new_start_date = date('Y-m-d H:i:s');
-            $new_end_date = date('Y-m-d H:i:s', strtotime('+30 days'));
+            $new_end_date = date('Y-m-d H:i:s', strtotime('+7 days')); // Changed from 30 to 7 days
             $stmt = $conn->prepare("UPDATE clearance_settings SET start_date = ?, end_date = ?, is_active = 1 WHERE academic_year = ?");
             $stmt->bind_param("sss", $new_start_date, $new_end_date, $academic_year);
             if ($stmt->execute()) {
-                add_flash_message('success', 'Clearance system started immediately for 30 days!');
+                add_flash_message('success', 'Clearance system started immediately for 7 days!'); // Updated message
                 $clearance_settings['start_date'] = $new_start_date;
                 $clearance_settings['end_date'] = $new_end_date;
                 $clearance_settings['is_active'] = 1;
@@ -551,8 +551,8 @@ $pending_students = $total_students - $students_in_process;
         
         <!-- Quick Actions -->
         <div class="cs-quick-actions">
-            <a href="?action=start_now" class="cs-action-btn start-now" onclick="return confirm('Start clearance system immediately for 30 days?')">
-                <i class="fas fa-rocket"></i> Start Now
+            <a href="?action=start_now" class="cs-action-btn start-now" onclick="return confirm('Start clearance system immediately for 7 days?')">
+                <i class="fas fa-rocket"></i> Start Now (7 Days)
             </a>
             <a href="?action=activate" class="cs-action-btn activate" onclick="return confirm('Activate clearance system?')">
                 <i class="fas fa-play"></i> Activate
